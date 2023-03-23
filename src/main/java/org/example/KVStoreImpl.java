@@ -7,7 +7,7 @@ public class KVStoreImpl implements KVStore {
     Map<Integer, Integer> map;
 
     public KVStoreImpl() {
-        this.map = new ConcurrentHashMap<Integer, Integer>();
+        this.map = new ConcurrentHashMap<>();
     }
 
     @Override
