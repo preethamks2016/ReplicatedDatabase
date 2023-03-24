@@ -1,0 +1,23 @@
+syntax = "proto3";
+option java_package = "com.tp.greeting";
+
+service KVService {
+  rpc put (PutRequest) returns (PutResponse) {}
+  rpc get (GetRequest) returns (GetResponse) {}
+}
+message PutRequest {
+  int32 key = 1;
+  int32 value = 2;
+}
+
+message PutResponse {
+  int32 value = 2;
+}
+
+message GetRequest {
+  int32 key = 1;
+}
+
+message GetResponse {
+  int32 value = 1;
+}
