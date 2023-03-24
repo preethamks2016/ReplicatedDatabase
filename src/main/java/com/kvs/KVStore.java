@@ -1,4 +1,4 @@
-package org.example;
+package com.kvs;
 
 public interface KVStore {
     int get(int key);

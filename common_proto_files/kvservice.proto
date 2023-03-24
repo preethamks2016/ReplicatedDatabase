@@ -1,5 +1,5 @@
 syntax = "proto3";
-option java_package = "com.tp.greeting";
+option java_package = "com.kvs";
 
 service KVService {
   rpc put (PutRequest) returns (PutResponse) {}
