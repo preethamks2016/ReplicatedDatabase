@@ -1,4 +1,6 @@
-package com.kvs;
+package com.kv.store;
+
+import com.kv.store.KVStore;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

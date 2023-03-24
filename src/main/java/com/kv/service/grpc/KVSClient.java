@@ -1,4 +1,4 @@
-package com.kvs.grpc;
+package com.kv.service.grpc;
 
 import com.kvs.KVServiceGrpc;
 import com.kvs.Kvservice;

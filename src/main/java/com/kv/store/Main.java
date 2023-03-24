@@ -1,4 +1,4 @@
-package com.kvs;
+package com.kv.store;
 
 public class Main {
     public static void main(String[] args) {
