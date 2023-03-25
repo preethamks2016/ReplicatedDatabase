@@ -13,9 +13,21 @@ import com.kvs.KVServiceGrpc;
 public class KVSServer {
     private static final Logger logger = Logger.getLogger(KVSServer.class.getName());
     private Server server;
+
+    public KVService service;
+
     private void start() throws IOException {
         int port = 50051;
+        KVServiceFactory.instantiateClasses(ServiceTYpe.FOLLOWER);
+
         server = ServerBuilder.forPort(port).addService(new KVSImpl()).build().start();
+
+        // start
+        try {
+            KVServiceFactory.getInstance().start();
+        } catch (Exception e) {
+
+        }
 
         logger.info("Server started, listening on " + port);
 
@@ -32,7 +44,12 @@ public class KVSServer {
         });
     }
     static class KVSImpl extends KVServiceGrpc.KVServiceImplBase {
+
+
         public void put(Kvservice.PutRequest req, StreamObserver<Kvservice.PutResponse> responseObserver) {
+            KVService kvService = KVServiceFactory.getInstance();
+            kvService.put(req.getKey(), req.getValue());
+
             logger.info("Got request from client: " + req);
             Kvservice.PutResponse reply = Kvservice.PutResponse.newBuilder().setValue(
                     req.getValue()
@@ -41,10 +58,36 @@ public class KVSServer {
             responseObserver.onCompleted();
         }
     }
+
+    static class KVServiceFactory {
+
+        static KVService kvService;
+        public static KVService getInstance() {
+            return kvService;
+        }
+
+        public static void instantiateClasses(ServiceTYpe type) {
+            switch (type){
+                case LEADER:
+                    kvService = new LeaderKVSService();
+                    break;
+                case FOLLOWER:
+                    kvService = new FollowerKVSService();
+                    break;
+                case CANDIDATE:
+                    kvService = new CandidateKVSService();
+                    break;
+            }
+
+
+
+        }
+    }
     public static void main(String[] args) throws IOException, InterruptedException {
         final KVSServer kvs = new KVSServer();
         kvs.start();
         kvs.server.awaitTermination();
     }
+
 }
 
