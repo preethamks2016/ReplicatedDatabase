@@ -19,7 +19,7 @@ public class Main {
         logStore.WriteToIndex(log3, 2);
 
         List<Log> logs = logStore.readAllLogs();
-        System.out.println(logs.get(1));
+        System.out.println(logs.size());
 
     }
 }

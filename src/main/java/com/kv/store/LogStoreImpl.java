@@ -20,7 +20,9 @@ public class LogStoreImpl implements LogStore {
     @Override
     public void WriteToIndex(Log log, int index) throws IOException {
         long offset = index * Log.SIZE;
-        file.seek(offset);
+        if (offset != file.getFilePointer()) {
+            file.seek(offset);
+        }
         file.write(log.toBytes());
         file.getChannel().force(true);
     }
