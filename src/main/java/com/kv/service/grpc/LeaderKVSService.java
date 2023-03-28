@@ -7,16 +7,22 @@ import com.kvs.Kvservice;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class LeaderKVSService extends KVService {
 
     ReentrantLock lock;
-    LeaderKVSService(LogStore logStore) {
+
+    List<Map<String, Object>> servers;
+    LeaderKVSService(LogStore logStore, List<Map<String, Object>> servers) {
         super(logStore);
         lock = new ReentrantLock();
+        servers = servers;
     }
+
+
     @Override
     public void put(int key, int value) {
         try {
@@ -36,6 +42,7 @@ public class LeaderKVSService extends KVService {
             lock.unlock();
 
             Kvservice.APERequest request =  populateAPERequest(prevLog, currentLog);
+
             //TODO :: send APE request
 
         } catch (IOException e) {
@@ -58,6 +65,7 @@ public class LeaderKVSService extends KVService {
                 .setKey(currentLog.getKey())
                 .setValue(currentLog.getValue()).build();
         entries.add(entry);
+
         Kvservice.APERequest request = Kvservice.APERequest.newBuilder()
                 .setLeaderTerm(currentLog.getTerm())
                 .setPrevLogIndex(prevLog == null ? -1 : prevLog.getIndex())
