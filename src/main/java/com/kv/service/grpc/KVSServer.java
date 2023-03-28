@@ -8,6 +8,7 @@ import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
 import java.io.IOException;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -25,7 +26,7 @@ public class KVSServer {
         int port = 50051;
 
         KVServiceFactory.instantiateClasses(ServiceType.FOLLOWER);
-        ReadAllServers();
+        ReadAllServers(port);
         server = ServerBuilder.forPort(port).addService(new KVSImpl()).build().start();
 
         // start
@@ -50,11 +51,19 @@ public class KVSServer {
         });
     }
 
-    private void ReadAllServers() throws IOException {
+    private void ReadAllServers(int selfPort) throws IOException {
         ObjectMapper objectMapper = new ObjectMapper();
         File configFile = new File("servers.json");
         Map<String, Object> configMap = objectMapper.readValue(configFile, Map.class);
-        servers = (List<Map<String, Object>>) configMap.get("servers");
+        List<Map<String, Object>> allServers = (List<Map<String, Object>>) configMap.get("servers");
+
+        servers = new ArrayList<Map<String, Object>>();
+        for (Map<String, Object> serverMap : allServers) {
+            int port = (int) serverMap.get("port");
+            if (port != selfPort) {
+                servers.add(serverMap);
+            }
+        }
     }
 
     static class KVSImpl extends KVServiceGrpc.KVServiceImplBase {
@@ -107,6 +116,7 @@ public class KVSServer {
             }
         }
     }
+
     public static void main(String[] args) throws IOException, InterruptedException {
         final KVSServer kvs = new KVSServer();
         kvs.start();
