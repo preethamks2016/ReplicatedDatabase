@@ -68,7 +68,7 @@ public class KVSServer {
             if (kvService.getType().equals(ServiceType.FOLLOWER)) {
                 reply = ((FollowerKVSService) kvService).appendEntries(req);
             } else {
-               // error
+                // error: only follower can append entries
             }
             responseObserver.onNext(reply);
             responseObserver.onCompleted();
