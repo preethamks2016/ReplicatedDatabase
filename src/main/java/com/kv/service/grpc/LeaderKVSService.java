@@ -8,15 +8,20 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class LeaderKVSService extends KVService {
+
+    private ExecutorService executor;
 
     ReentrantLock lock;
     LeaderKVSService(LogStore logStore) {
         super(logStore);
         lock = new ReentrantLock();
     }
+
     @Override
     public void put(int key, int value) {
         try {
