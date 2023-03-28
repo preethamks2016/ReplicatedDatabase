@@ -7,20 +7,25 @@ import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
 import java.io.IOException;
+import java.io.File;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import com.kvs.KVServiceGrpc;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 
 public class KVSServer {
     private static final Logger logger = Logger.getLogger(KVSServer.class.getName());
+    private List<Map<String, Object>> servers;
     private Server server;
 
     private void start() throws IOException {
         int port = 50051;
 
         KVServiceFactory.instantiateClasses(ServiceType.FOLLOWER);
-
+        ReadAllServers();
         server = ServerBuilder.forPort(port).addService(new KVSImpl()).build().start();
 
         // start
@@ -44,6 +49,14 @@ public class KVSServer {
             }
         });
     }
+
+    private void ReadAllServers() throws IOException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        File configFile = new File("servers.json");
+        Map<String, Object> configMap = objectMapper.readValue(configFile, Map.class);
+        servers = (List<Map<String, Object>>) configMap.get("servers");
+    }
+
     static class KVSImpl extends KVServiceGrpc.KVServiceImplBase {
 
         KVService kvService;
