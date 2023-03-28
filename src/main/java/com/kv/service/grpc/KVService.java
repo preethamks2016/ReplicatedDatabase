@@ -1,6 +1,7 @@
 package com.kv.service.grpc;
 
 import com.kv.store.LogStore;
+import com.kvs.Kvservice;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -20,4 +21,6 @@ public abstract class KVService {
     public abstract void start();
 
     public abstract ServiceType getType();
+
+    public abstract Kvservice.APEResponse appendEntries(Kvservice.APERequest req);
 }

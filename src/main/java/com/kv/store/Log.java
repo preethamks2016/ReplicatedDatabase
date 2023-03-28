@@ -6,7 +6,7 @@ import java.nio.ByteBuffer;
 
 @Getter
 public class Log {
-    public static final int SIZE = Integer.BYTES * 3;
+    public static final int SIZE = Integer.BYTES * 4;
 
     int index;
     int term;

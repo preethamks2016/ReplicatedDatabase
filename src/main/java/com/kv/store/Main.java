@@ -8,7 +8,7 @@ public class Main {
         System.out.println("Hello world!");
         KVStore kvStore = new KVStoreImpl();
         kvStore.put(1, 5);
-        System.out.println(kvStore.get(1));
+//        System.out.println(kvStore.get(1));
 
         LogStore logStore = new LogStoreImpl("log.txt");
         Log log1 = new Log(0,0,1,2);
@@ -17,7 +17,7 @@ public class Main {
         logStore.WriteToIndex(log1, 0);
         logStore.WriteToIndex(log2, 1);
         logStore.WriteToIndex(log3, 2);
-
+        System.out.println(logStore.getLastLogEntry().get().getValue());
         List<Log> logs = logStore.readAllLogs();
         System.out.println(logs.size());
 

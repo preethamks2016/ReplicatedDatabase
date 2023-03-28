@@ -17,6 +17,11 @@ public class CandidateKVSService extends KVService{
 
     }
 
+    public com.kvs.Kvservice.APEResponse appendEntries(com.kvs.Kvservice.APERequest req) {
+        // todo:
+        return null;
+    }
+
     @Override
     public ServiceType getType() {
         return ServiceType.CANDIDATE;

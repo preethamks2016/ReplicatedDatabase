@@ -29,6 +29,7 @@ public class FollowerKVSService extends KVService {
         return ServiceType.FOLLOWER;
     }
 
+    @Override
     public APEResponse appendEntries(APERequest req) {
         try {
             Optional<Log> optionalLog = logStore.getLastLogEntry();

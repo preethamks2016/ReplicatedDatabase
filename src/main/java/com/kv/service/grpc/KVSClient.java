@@ -32,6 +32,7 @@ public class KVSClient {
         logger.info("Got following from the server: " + response.getValue());
     }
 
+
     public static void main(String[] args) throws Exception {
         int key = 1;
         int val = 2;

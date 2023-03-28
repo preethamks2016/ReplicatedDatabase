@@ -41,6 +41,7 @@ public class LogStoreImpl implements LogStore {
         if (offset == 0)
             return Optional.empty();
         else {
+            offset -= Log.SIZE;
             file.seek(offset);
             byte[] buffer = new byte[Log.SIZE];
             file.readFully(buffer);

@@ -64,12 +64,7 @@ public class KVSServer {
 
         public void appendEntriesRPC(Kvservice.APERequest req, StreamObserver<Kvservice.APEResponse> responseObserver) {
             logger.info("Got request from client: " + req);
-            Kvservice.APEResponse reply = null;
-            if (kvService.getType().equals(ServiceType.FOLLOWER)) {
-                reply = ((FollowerKVSService) kvService).appendEntries(req);
-            } else {
-                // error: only follower can append entries
-            }
+            Kvservice.APEResponse reply  = kvService.appendEntries(req);
             responseObserver.onNext(reply);
             responseObserver.onCompleted();
         }

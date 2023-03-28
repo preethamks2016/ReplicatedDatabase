@@ -1,6 +1,7 @@
 package com.kv.service.grpc;
 
 import com.kv.store.LogStore;
+import com.kvs.Kvservice;
 
 public class LeaderKVSService extends KVService {
 
@@ -24,5 +25,12 @@ public class LeaderKVSService extends KVService {
     @Override
     public ServiceType getType() {
         return ServiceType.LEADER;
+    }
+
+    @Override
+    public Kvservice.APEResponse appendEntries(Kvservice.APERequest req) {
+        logger.error("Invalid call: Leader cannot receive append entries");
+        //todo: throw exception
+        return null;
     }
 }
