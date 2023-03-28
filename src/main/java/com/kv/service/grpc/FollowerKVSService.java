@@ -32,20 +32,17 @@ public class FollowerKVSService extends KVService {
     @Override
     public APEResponse appendEntries(APERequest req) {
         try {
-            Optional<Log> optionalLog = logStore.getLastLogEntry();
-            if (optionalLog.isPresent()) {
-                Log lastLog = optionalLog.get();
-
+            if (req.getPrevLogIndex() != -1) {
                 //todo: can maintain local state
-                int currentIndex = lastLog.getIndex() + 1;
-                int currentTerm = lastLog.getTerm();
+                int currentTerm = getCurrentTerm();
 
                 if (req.getLeaderTerm() < currentTerm) {
                     logger.error("leader term less than current term of follower");
                     return APEResponse.newBuilder().setCurrentTerm(currentTerm).setSuccess(false).build();
                 }
 
-                if (req.getPrevLogIndex() != lastLog.getIndex() || req.getPrevLogTerm() != lastLog.getTerm()) {
+                Log prevLog = logStore.ReadAtIndex(req.getPrevLogIndex());
+                if (req.getPrevLogTerm() != prevLog.getTerm()) {
                     logger.error("previous log entry does not match");
                     return APEResponse.newBuilder().setCurrentTerm(currentTerm).setSuccess(false).build();
                 }
@@ -65,5 +62,11 @@ public class FollowerKVSService extends KVService {
             ex.printStackTrace();
             return APEResponse.newBuilder().setSuccess(false).build();
         }
+    }
+
+    // gets current term by reading the last log in the log list
+    int getCurrentTerm() throws IOException {
+        Optional<Log> optionalLog = logStore.getLastLogEntry();
+        return optionalLog.map(Log::getTerm).orElse(-1);
     }
 }

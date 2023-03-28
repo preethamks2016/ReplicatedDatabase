@@ -35,19 +35,19 @@ public class KVSClient {
         logger.info("Got following from the server: " + response.getValue());
     }
 
-    public Kvservice.APEResponse appendEntries(int key, int value) {
+    public Kvservice.APEResponse appendEntries(int leaderTerm, int prevIndex, int prevTerm, int key, int value) {
         Kvservice.Entry entry = Kvservice.Entry.newBuilder()
-                .setIndex(0)
-                .setTerm(0)
+                .setIndex(prevIndex + 1)
+                .setTerm(leaderTerm)
                 .setKey(key)
                 .setValue(value).build();
         List<Kvservice.Entry> entries = new ArrayList<>();
         entries.add(entry);
 
         Kvservice.APERequest request = Kvservice.APERequest.newBuilder()
-                .setLeaderTerm(0)
-                .setPrevLogIndex(0)
-                .setPrevLogTerm(0)
+                .setLeaderTerm(leaderTerm)
+                .setPrevLogIndex(prevIndex)
+                .setPrevLogTerm(prevTerm)
                 .addAllEntry(entries)
                 .build();
 
@@ -71,8 +71,10 @@ public class KVSClient {
                 .build();
         try {
             KVSClient client = new KVSClient(channel);
-            client.put(key, val);
-            client.appendEntries(1, 100);
+//            client.put(key, val);
+            client.appendEntries(0, -1, -1, 1, 100);
+            client.appendEntries(1, 0, 0, 2, 200);
+            client.appendEntries(0, 1, 0, 3, 300);
         } finally {
             channel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
         }
