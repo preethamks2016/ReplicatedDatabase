@@ -11,4 +11,5 @@ public interface LogStore {
     Optional<Log> getLastLogEntry() throws IOException;
 
     List<Log> readAllLogs() throws IOException;
+    Log ReadAtIndex(int index) throws IOException;
 }

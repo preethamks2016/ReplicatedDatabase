@@ -72,6 +72,22 @@ public class LogStoreImpl implements LogStore {
         return logs;
     }
 
+    public Log ReadAtIndex(int index) throws IOException {
+        long offset = index * Log.SIZE;
+        if (offset >= file.length()) {
+            return null; // index out of bounds
+        }
+        file.seek(offset);
+        byte[] buffer = new byte[Log.SIZE];
+        file.readFully(buffer);
+        ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
+        index = byteBuffer.getInt();
+        int term = byteBuffer.getInt();
+        int key = byteBuffer.getInt();
+        int value = byteBuffer.getInt();
+        return new Log(index, term, key, value);
+    }
+
     public void close() throws IOException {
         file.close();
     }
