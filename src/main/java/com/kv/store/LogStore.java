@@ -1,5 +1,7 @@
 package com.kv.store;
 
+import com.kvs.Kvservice;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -11,5 +13,7 @@ public interface LogStore {
     Optional<Log> getLastLogEntry() throws IOException;
 
     List<Log> readAllLogs() throws IOException;
+
     Log ReadAtIndex(int index) throws IOException;
+
 }

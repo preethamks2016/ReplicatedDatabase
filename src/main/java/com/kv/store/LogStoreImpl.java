@@ -1,20 +1,28 @@
 package com.kv.store;
 
+import com.kvs.Kvservice;
+
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class LogStoreImpl implements LogStore {
 
     private final String fileName;
     private final RandomAccessFile file;
 
+    ReentrantLock lock;
+
+
     public LogStoreImpl(String fileName) throws IOException {
         this.fileName = fileName;
         this.file = new RandomAccessFile(fileName, "rw");
+        lock = new ReentrantLock();
+        long offset = file.length();
     }
 
     @Override

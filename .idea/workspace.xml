@@ -4,15 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="6df9ea64-46a8-4afc-a0c9-b2514033bb9e" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/common_proto_files/greetings.proto" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/common_proto_files/greetings.proto" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/tp/grpc/GreetServer.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/org/example/greetings.proto" afterDir="false" />
+    <list default="true" id="98aafb11-af3f-4754-94a8-c59302269d80" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/example/KVStoreImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/KVStoreImpl.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/example/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/Main.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/kv/service/grpc/KVSServer.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/kv/service/grpc/KVSServer.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/kv/service/grpc/LeaderKVSService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/kv/service/grpc/LeaderKVSService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/kv/store/LogStore.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/kv/store/LogStore.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/kv/store/LogStoreImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/kv/store/LogStoreImpl.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -45,20 +42,20 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "WebServerToolWindowFactoryState": "false",
-    "last_opened_file_path": "/Users/preethamks2016/Documents/GitHub/ReplicatedDatabase/src",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/preethamks2016/Documents/GitHub/ReplicatedDatabase/src&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CreateClassDialog.RecentsKey">
       <recent name="org.example" />
@@ -89,5 +86,16 @@
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
 </project>

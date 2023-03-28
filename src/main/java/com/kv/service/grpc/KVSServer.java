@@ -22,12 +22,11 @@ public class KVSServer {
     private List<Map<String, Object>> servers;
     private Server server;
 
-    private void start() throws IOException {
-        int port = 50051;
-
+    private void start(ServiceType serviceType, int port) throws IOException {
         LogStore logStore = new LogStoreImpl("log.txt");
-        KVServiceFactory.instantiateClasses(ServiceType.FOLLOWER, logStore);
+
         ReadAllServers(port);
+        KVServiceFactory.instantiateClasses(serviceType, logStore);
         server = ServerBuilder.forPort(port).addService(new KVSImpl()).build().start();
 
         // start
@@ -98,12 +97,18 @@ public class KVSServer {
     static class KVServiceFactory {
 
         static KVService kvService;
+
         public static KVService getInstance() {
             return kvService;
         }
 
         public static void instantiateClasses(ServiceType type, LogStore logStore) throws IOException {
+<<<<<<< HEAD
             switch (type){
+=======
+
+            switch (type) {
+>>>>>>> 8d4a08a (- adding arguments)
                 case LEADER:
                     kvService = new LeaderKVSService(logStore);
                     break;
@@ -119,7 +124,7 @@ public class KVSServer {
 
     public static void main(String[] args) throws IOException, InterruptedException {
         final KVSServer kvs = new KVSServer();
-        kvs.start();
+        kvs.start(ServiceType.valueOf(args[0]), Integer.valueOf(args[1]));
         kvs.server.awaitTermination();
     }
 
