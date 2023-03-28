@@ -4,6 +4,7 @@ option java_package = "com.kvs";
 service KVService {
   rpc put (PutRequest) returns (PutResponse) {}
   rpc get (GetRequest) returns (GetResponse) {}
+  rpc AppendEntriesRPC (APERequest) returns (APEResponse) {}
 }
 message PutRequest {
   int32 key = 1;
@@ -11,7 +12,7 @@ message PutRequest {
 }
 
 message PutResponse {
-  int32 value = 2;
+  int32 value = 1;
 }
 
 message GetRequest {
@@ -20,4 +21,23 @@ message GetRequest {
 
 message GetResponse {
   int32 value = 1;
+}
+
+message Entry {
+  int32 term = 1;
+  int32 key = 2;
+  int32 value = 3;
+}
+
+message APERequest {
+  int32 leaderTerm = 1;
+  int32 prevLogIndex = 2;
+  int32 prevLogTerm = 3;
+  repeated Entry entry = 4;
+}
+
+
+message APEResponse {
+  int32 currentTerm = 1;
+  bool success = 2;
 }

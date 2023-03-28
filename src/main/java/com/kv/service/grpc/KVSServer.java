@@ -57,6 +57,12 @@ public class KVSServer {
             responseObserver.onNext(reply);
             responseObserver.onCompleted();
         }
+
+//        public void appendEntriesRPC(Kvservice.APERequest req, StreamObserver<Kvservice.APEResponse> responseObserver) {
+//
+//        }
+
+
     }
 
     static class KVServiceFactory {
