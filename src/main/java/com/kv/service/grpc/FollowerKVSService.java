@@ -38,7 +38,7 @@ public class FollowerKVSService extends KVService {
 
                 //todo: can maintain local state
                 int currentIndex = lastLog.getIndex() + 1;
-                int currentTerm = lastLog.getTerm() + 1;
+                int currentTerm = lastLog.getTerm();
 
                 if (req.getLeaderTerm() < currentTerm) {
                     logger.error("leader term less than current term of follower");
@@ -47,19 +47,19 @@ public class FollowerKVSService extends KVService {
 
                 if (req.getPrevLogIndex() != lastLog.getIndex() || req.getPrevLogTerm() != lastLog.getTerm()) {
                     logger.error("previous log entry does not match");
-                    return APEResponse.newBuilder().setSuccess(false).build();
+                    return APEResponse.newBuilder().setCurrentTerm(currentTerm).setSuccess(false).build();
                 }
 
                 // todo: if existing entry does not match delete the existing entry and all that follow it
 
-                //todo: check commit index
+                // todo: check commit index
             }
 
             // write the new log
             Kvservice.Entry logEntry = req.getEntry(0);
             Log newLog = new Log(logEntry.getIndex(), logEntry.getTerm(), logEntry.getKey(), logEntry.getValue());
-            logStore.WriteAtEnd(newLog);
-            return APEResponse.newBuilder().setSuccess(true).build();
+            logStore.WriteToIndex(newLog, logEntry.getIndex());
+            return APEResponse.newBuilder().setCurrentTerm(req.getLeaderTerm()).setSuccess(true).build();
         } catch (IOException ex) {
             logger.error("IO error");
             ex.printStackTrace();
