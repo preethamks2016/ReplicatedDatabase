@@ -1,5 +1,7 @@
 package com.kv.service.grpc;
 
+import com.kv.store.LogStore;
+import com.kv.store.LogStoreImpl;
 import com.kvs.Kvservice;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
@@ -14,11 +16,10 @@ public class KVSServer {
     private static final Logger logger = Logger.getLogger(KVSServer.class.getName());
     private Server server;
 
-    public KVService service;
-
     private void start() throws IOException {
         int port = 50051;
-        KVServiceFactory.instantiateClasses(ServiceTYpe.FOLLOWER);
+
+        KVServiceFactory.instantiateClasses(ServiceType.FOLLOWER);
 
         server = ServerBuilder.forPort(port).addService(new KVSImpl()).build().start();
 
@@ -45,12 +46,15 @@ public class KVSServer {
     }
     static class KVSImpl extends KVServiceGrpc.KVServiceImplBase {
 
+        KVService kvService;
+        public KVSImpl() {
+            this.kvService = KVServiceFactory.getInstance();
+        }
 
         public void put(Kvservice.PutRequest req, StreamObserver<Kvservice.PutResponse> responseObserver) {
-            KVService kvService = KVServiceFactory.getInstance();
+            logger.info("Got request from client: " + req);
             kvService.put(req.getKey(), req.getValue());
 
-            logger.info("Got request from client: " + req);
             Kvservice.PutResponse reply = Kvservice.PutResponse.newBuilder().setValue(
                     req.getValue()
             ).build();
@@ -58,9 +62,17 @@ public class KVSServer {
             responseObserver.onCompleted();
         }
 
-//        public void appendEntriesRPC(Kvservice.APERequest req, StreamObserver<Kvservice.APEResponse> responseObserver) {
-//
-//        }
+        public void appendEntriesRPC(Kvservice.APERequest req, StreamObserver<Kvservice.APEResponse> responseObserver) {
+            logger.info("Got request from client: " + req);
+            Kvservice.APEResponse reply = null;
+            if (kvService.getType().equals(ServiceType.FOLLOWER)) {
+                reply = ((FollowerKVSService) kvService).appendEntries(req);
+            } else {
+               // error
+            }
+            responseObserver.onNext(reply);
+            responseObserver.onCompleted();
+        }
 
 
     }
@@ -72,21 +84,19 @@ public class KVSServer {
             return kvService;
         }
 
-        public static void instantiateClasses(ServiceTYpe type) {
+        public static void instantiateClasses(ServiceType type) throws IOException {
+            LogStore logStore = new LogStoreImpl("log.txt");
             switch (type){
                 case LEADER:
-                    kvService = new LeaderKVSService();
+                    kvService = new LeaderKVSService(logStore);
                     break;
                 case FOLLOWER:
-                    kvService = new FollowerKVSService();
+                    kvService = new FollowerKVSService(logStore);
                     break;
                 case CANDIDATE:
-                    kvService = new CandidateKVSService();
+                    kvService = new CandidateKVSService(logStore);
                     break;
             }
-
-
-
         }
     }
     public static void main(String[] args) throws IOException, InterruptedException {

@@ -1,9 +1,11 @@
 package com.kv.service.grpc;
 
+import com.kv.store.LogStore;
+
 public class LeaderKVSService extends KVService {
 
-    LeaderKVSService() {
-
+    LeaderKVSService(LogStore logStore) {
+        super(logStore);
     }
     @Override
     public void put(int key, int value) {
@@ -19,4 +21,8 @@ public class LeaderKVSService extends KVService {
 
     }
 
+    @Override
+    public ServiceType getType() {
+        return ServiceType.LEADER;
+    }
 }

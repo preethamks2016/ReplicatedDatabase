@@ -24,9 +24,10 @@ message GetResponse {
 }
 
 message Entry {
-  int32 term = 1;
-  int32 key = 2;
-  int32 value = 3;
+  int32 index = 1;
+  int32 term = 2;
+  int32 key = 3;
+  int32 value = 4;
 }
 
 message APERequest {
@@ -34,6 +35,7 @@ message APERequest {
   int32 prevLogIndex = 2;
   int32 prevLogTerm = 3;
   repeated Entry entry = 4;
+  int32 leaderCommitIdx = 5;
 }
 
 
