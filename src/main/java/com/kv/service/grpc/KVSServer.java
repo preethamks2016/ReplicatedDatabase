@@ -103,12 +103,7 @@ public class KVSServer {
         }
 
         public static void instantiateClasses(ServiceType type, LogStore logStore) throws IOException {
-<<<<<<< HEAD
             switch (type){
-=======
-
-            switch (type) {
->>>>>>> 8d4a08a (- adding arguments)
                 case LEADER:
                     kvService = new LeaderKVSService(logStore);
                     break;
