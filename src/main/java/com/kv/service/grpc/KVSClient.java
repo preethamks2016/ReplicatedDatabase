@@ -35,21 +35,21 @@ public class KVSClient {
         logger.info("Got following from the server: " + response.getValue());
     }
 
-    public Kvservice.APEResponse appendEntries(int leaderTerm, int prevIndex, int prevTerm, int key, int value) {
-        Kvservice.Entry entry = Kvservice.Entry.newBuilder()
-                .setIndex(prevIndex + 1)
-                .setTerm(leaderTerm)
-                .setKey(key)
-                .setValue(value).build();
-        List<Kvservice.Entry> entries = new ArrayList<>();
-        entries.add(entry);
-
-        Kvservice.APERequest request = Kvservice.APERequest.newBuilder()
-                .setLeaderTerm(leaderTerm)
-                .setPrevLogIndex(prevIndex)
-                .setPrevLogTerm(prevTerm)
-                .addAllEntry(entries)
-                .build();
+    public Kvservice.APEResponse appendEntries(Kvservice.APERequest request) {
+//        Kvservice.Entry entry = Kvservice.Entry.newBuilder()
+//                .setIndex(prevIndex + 1)
+//                .setTerm(leaderTerm)
+//                .setKey(key)
+//                .setValue(value).build();
+//        List<Kvservice.Entry> entries = new ArrayList<>();
+//        entries.add(entry);
+//
+//        Kvservice.APERequest request = Kvservice.APERequest.newBuilder()
+//                .setLeaderTerm(leaderTerm)
+//                .setPrevLogIndex(prevIndex)
+//                .setPrevLogTerm(prevTerm)
+//                .addAllEntry(entries)
+//                .build();
 
         logger.info("Sending to server: " + request);
         Kvservice.APEResponse response = null;
@@ -72,9 +72,9 @@ public class KVSClient {
         try {
             KVSClient client = new KVSClient(channel);
 //            client.put(key, val);
-            client.appendEntries(0, -1, -1, 1, 100);
-            client.appendEntries(1, 0, 0, 2, 200);
-            client.appendEntries(0, 1, 0, 3, 300);
+//            client.appendEntries(0, -1, -1, 1, 100);
+//            client.appendEntries(1, 0, 0, 2, 200);
+//            client.appendEntries(0, 1, 0, 3, 300);
         } finally {
             channel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
         }

@@ -9,7 +9,7 @@ public class CandidateKVSService extends KVService{
 
     List<Map<String, Object>> servers;
     public CandidateKVSService(LogStore logStore,  List<Map<String, Object>> servers) {
-        super(logStore);
+        super(logStore, servers);
         this.servers = servers;
     }
 

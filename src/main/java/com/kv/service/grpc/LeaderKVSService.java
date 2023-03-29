@@ -3,14 +3,15 @@ package com.kv.service.grpc;
 import com.kv.store.Log;
 import com.kv.store.LogStore;
 import com.kvs.Kvservice;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class LeaderKVSService extends KVService {
@@ -19,13 +20,12 @@ public class LeaderKVSService extends KVService {
 
     ReentrantLock lock;
 
-    List<Map<String, Object>> servers;
     LeaderKVSService(LogStore logStore, List<Map<String, Object>> servers) {
-        super(logStore);
+        super(logStore, servers);
         lock = new ReentrantLock();
-        servers = servers;
+        executor = Executors.newFixedThreadPool(5);
     }
-    
+
     @Override
     public void put(int key, int value) {
         try {
@@ -44,18 +44,41 @@ public class LeaderKVSService extends KVService {
             }
             lock.unlock();
 
+
+
             Kvservice.APERequest request =  populateAPERequest(prevLog, currentLog);
 
-            //TODO :: send APE request
+            CompletionService<Kvservice.APEResponse> completionService = new ExecutorCompletionService<>(executor);
+            for (KVSClient client : clients) {
+                completionService.submit(() -> {
+                    Kvservice.APEResponse response = client.appendEntries(request);
+                    // todo : handle this request
+                    return response;
+                });
+            }
+
+            int ackCount = 1;
+            int totalServers = clients.size() + 1;
+            while (ackCount <= totalServers/2) {
+                try {
+                    Future<Kvservice.APEResponse> completedTask = completionService.take();
+                    if (completedTask.get().getSuccess()) {
+                        ackCount++;
+                    }
+                    else {
+                        // todo: handle failure
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } catch (ExecutionException e) {
+                    // handle exception from server
+                }
+            }
 
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
 
-        //get index
-        //append entries to log
-        //send appendEntries request
-        //ack
         return;
     }
 

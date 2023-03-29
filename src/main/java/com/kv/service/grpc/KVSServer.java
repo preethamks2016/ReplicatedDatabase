@@ -23,7 +23,7 @@ public class KVSServer {
     private Server server;
 
     private void start(ServiceType serviceType, int port) throws IOException {
-        LogStore logStore = new LogStoreImpl("log.txt");
+        LogStore logStore = new LogStoreImpl("log" + port + ".txt");
 
         ReadAllServers(port);
         KVServiceFactory.instantiateClasses(serviceType, logStore, servers);

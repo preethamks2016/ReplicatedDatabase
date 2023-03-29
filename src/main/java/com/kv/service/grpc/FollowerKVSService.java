@@ -7,11 +7,14 @@ import com.kvs.Kvservice.APERequest;
 import com.kvs.Kvservice.APEResponse;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public class FollowerKVSService extends KVService {
     public FollowerKVSService(LogStore logStore) {
-        super(logStore);
+        super(logStore, new ArrayList<Map<String, Object>>());
     }
 
     @Override
