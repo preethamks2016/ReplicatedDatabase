@@ -44,11 +44,11 @@ public class FollowerKVSService extends KVService {
                     return APEResponse.newBuilder().setCurrentTerm(currentTerm).setSuccess(false).build();
                 }
 
-//                Log prevLog = logStore.ReadAtIndex(req.getPrevLogIndex());
-//                if (req.getPrevLogTerm() != prevLog.getTerm()) {
-//                    logger.error("previous log entry does not match");
-//                    return APEResponse.newBuilder().setCurrentTerm(currentTerm).setSuccess(false).build();
-//                }
+                Log prevLog = logStore.ReadAtIndex(req.getPrevLogIndex());
+                if (prevLog == null || req.getPrevLogTerm() != prevLog.getTerm()) {
+                    logger.error("previous log entry does not match");
+                    return APEResponse.newBuilder().setCurrentTerm(currentTerm).setSuccess(false).build();
+                }
 
                 // todo: if existing entry does not match delete the existing entry and all that follow it
 

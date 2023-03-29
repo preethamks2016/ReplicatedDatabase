@@ -51,7 +51,12 @@ public class LeaderKVSService extends KVService {
             CompletionService<Kvservice.APEResponse> completionService = new ExecutorCompletionService<>(executor);
             for (KVSClient client : clients) {
                 completionService.submit(() -> {
-                    Kvservice.APEResponse response = client.appendEntries(request);
+                    Kvservice.APEResponse response;
+                    do {
+                        response = client.appendEntries(request);
+                        if (response.getSuccess()) break;
+                    } while (true);
+
                     // todo : handle this request
                     return response;
                 });
