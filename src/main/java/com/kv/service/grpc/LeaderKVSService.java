@@ -59,7 +59,7 @@ public class LeaderKVSService extends KVService {
 
             int ackCount = 1;
             int totalServers = clients.size() + 1;
-            while (ackCount <= totalServers/2) {
+            while (ackCount < totalServers) {
                 try {
                     Future<Kvservice.APEResponse> completedTask = completionService.take();
                     if (completedTask.get().getSuccess()) {

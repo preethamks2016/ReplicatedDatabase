@@ -3,17 +3,17 @@
     {
       "name": "server1",
       "ip": "127.0.0.1",
-      "port": 8080
+      "port": 5050
     },
     {
       "name": "server2",
       "ip": "127.0.0.1",
-      "port": 8081
+      "port": 5051
     },
     {
       "name": "server2",
       "ip": "127.0.0.1",
-      "port": 8082
+      "port": 5052
     }
   ]
 }
