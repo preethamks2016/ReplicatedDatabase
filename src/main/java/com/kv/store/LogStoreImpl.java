@@ -27,10 +27,8 @@ public class LogStoreImpl implements LogStore {
     }
 
     private void setInitialTerm() throws IOException {
-        metadataFile.seek(0);
         // setting initial term to 0
-        metadataFile.writeInt(0);
-        metadataFile.getChannel().force(true);
+        setTerm(0);
     }
 
     @Override
@@ -47,25 +45,15 @@ public class LogStoreImpl implements LogStore {
 
     @Override
     public void WriteToIndex(Log log, int index) throws IOException {
-        long offset = index * Log.SIZE;
-        if (offset != file.getFilePointer()) {
-            file.seek(offset);
-        }
-        file.write(log.toBytes());
-        file.getChannel().force(true);
-    }
-
-    @Override
-    public void WriteAtEnd(Log log) throws IOException {
-        long offset = file.length();
-        file.seek(offset);
+        long newOffset = (long) index * Log.SIZE;
+        file.seek(newOffset);
         file.write(log.toBytes());
         file.getChannel().force(true);
     }
 
     @Override
     public Optional<Log> getLastLogEntry() throws IOException {
-        long offset = file.length();
+        long offset = getEOFOffset();
         if (offset == 0)
             return Optional.empty();
         else {
@@ -86,7 +74,7 @@ public class LogStoreImpl implements LogStore {
         List<Log> logs = new ArrayList<>();
         byte[] buffer = new byte[Log.SIZE];
         long offset = 0;
-        while (offset < file.length()) {
+        while (offset < getEOFOffset()) {
             file.seek(offset);
             file.readFully(buffer);
             ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
@@ -100,23 +88,48 @@ public class LogStoreImpl implements LogStore {
         return logs;
     }
 
-    public Log ReadAtIndex(int index) throws IOException {
-        long offset = index * Log.SIZE;
+    public Optional<Log> ReadAtIndex(int index) throws IOException {
+        long offset = (long) index * Log.SIZE;
         if (offset >= file.length()) {
-            return null; // index out of bounds
+            return Optional.empty(); // index out of bounds
         }
         file.seek(offset);
         byte[] buffer = new byte[Log.SIZE];
         file.readFully(buffer);
         ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
-        index = byteBuffer.getInt();
+        int logIndex = byteBuffer.getInt();
+        if (logIndex == 0 && index !=0) return Optional.empty(); // empty slot
         int term = byteBuffer.getInt();
         int key = byteBuffer.getInt();
         int value = byteBuffer.getInt();
-        return new Log(index, term, key, value);
+        return Optional.of(new Log(logIndex, term, key, value));
     }
 
     public void close() throws IOException {
         file.close();
+    }
+
+    @Override
+    public long getEOFOffset() throws IOException {
+        long offset = 0;
+        int idx = 0;
+        while (offset < file.length()) {
+            Optional<Log> optionalLog = ReadAtIndex(idx);
+            if (optionalLog.isPresent() && optionalLog.get().getIndex() == -1) return offset;
+            offset += Log.SIZE;
+            idx++;
+        }
+        return offset;
+    }
+
+    @Override
+    public void markEnding(int currentIndex) throws IOException {
+        long offset = (long) currentIndex * Log.SIZE;
+        int idx = currentIndex;
+        while (offset < file.length()) {
+            WriteToIndex(new Log(-1, -1,-1,-1), idx);
+            offset += Log.SIZE;
+            idx++;
+        }
     }
 }

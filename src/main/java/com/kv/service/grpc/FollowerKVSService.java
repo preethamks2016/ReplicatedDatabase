@@ -35,41 +35,53 @@ public class FollowerKVSService extends KVService {
     @Override
     public APEResponse appendEntries(APERequest req) {
         try {
+
+            // Case 1: compare terms
+            int currentTerm = logStore.getCurrentTerm(); //todo: can maintain local state
+            if (req.getLeaderTerm() < currentTerm) {
+                logger.error("leader term less than current term of follower");
+                return APEResponse.newBuilder().setCurrentTerm(currentTerm).setSuccess(false).build();
+            }
+
+            // update currentTerm to latest term seen from leader
+            currentTerm = req.getLeaderTerm();
+            logStore.setTerm(currentTerm);
+
+            // Case 2: if NOT the first log from the leader / previous log data exists in leader
             if (req.getPrevLogIndex() != -1) {
-                //todo: can maintain local state
-                int currentTerm = getCurrentTerm();
-
-                if (req.getLeaderTerm() < currentTerm) {
-                    logger.error("leader term less than current term of follower");
-                    return APEResponse.newBuilder().setCurrentTerm(currentTerm).setSuccess(false).build();
-                }
-
-                Log prevLog = logStore.ReadAtIndex(req.getPrevLogIndex());
-                if (prevLog == null || req.getPrevLogTerm() != prevLog.getTerm()) {
+                Optional<Log> prevLog = logStore.ReadAtIndex(req.getPrevLogIndex());
+                if (!(prevLog.isPresent() && req.getPrevLogTerm() == prevLog.get().getTerm() && req.getPrevLogIndex() == prevLog.get().getIndex())) {
                     logger.error("previous log entry does not match");
                     return APEResponse.newBuilder().setCurrentTerm(currentTerm).setSuccess(false).build();
                 }
-
-                // todo: if existing entry does not match delete the existing entry and all that follow it
-
-                // todo: check commit index
             }
 
-            // write the new log
             Kvservice.Entry logEntry = req.getEntry(0);
+            int currentIndex = logEntry.getIndex();
+            // Case 3: if existing entry does not match delete the existing entry and all that follow it
+            Optional<Log> currentLog = logStore.ReadAtIndex(currentIndex);
+            if (!(currentLog.isPresent()
+                    && logEntry.getIndex() == currentLog.get().getIndex()
+                    && logEntry.getTerm() == currentLog.get().getTerm()
+                    && logEntry.getKey() == currentLog.get().getKey()
+                    && logEntry.getValue() == currentLog.get().getValue())) {
+
+                // mark -1s
+                logStore.markEnding(currentIndex);
+            }
+
+
+            // todo: check commit index
+
+            // Write the new log
             Log newLog = new Log(logEntry.getIndex(), logEntry.getTerm(), logEntry.getKey(), logEntry.getValue());
-            logStore.WriteToIndex(newLog, logEntry.getIndex());
-            return APEResponse.newBuilder().setCurrentTerm(req.getLeaderTerm()).setSuccess(true).build();
+            logStore.WriteToIndex(newLog, currentIndex);
+
+            return APEResponse.newBuilder().setCurrentTerm(currentTerm).setSuccess(true).build();
         } catch (IOException ex) {
             logger.error("IO error");
             ex.printStackTrace();
             return APEResponse.newBuilder().setSuccess(false).build();
         }
-    }
-
-    // gets current term by reading the last log in the log list
-    int getCurrentTerm() throws IOException {
-        Optional<Log> optionalLog = logStore.getLastLogEntry();
-        return optionalLog.map(Log::getTerm).orElse(-1);
     }
 }
