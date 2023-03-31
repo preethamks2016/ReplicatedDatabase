@@ -1,7 +1,5 @@
 package com.kv.store;
 
-import com.kvs.Kvservice;
-
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
@@ -15,14 +13,36 @@ public class LogStoreImpl implements LogStore {
     private final String fileName;
     private final RandomAccessFile file;
 
+    private final RandomAccessFile metadataFile;
     ReentrantLock lock;
 
 
-    public LogStoreImpl(String fileName) throws IOException {
+    public LogStoreImpl(String fileName, String metadataFileName) throws IOException {
         this.fileName = fileName;
         this.file = new RandomAccessFile(fileName, "rw");
-        lock = new ReentrantLock();
         long offset = file.length();
+        this.metadataFile = new RandomAccessFile(metadataFileName, "rw");
+        setInitialTerm();
+        lock = new ReentrantLock();
+    }
+
+    private void setInitialTerm() throws IOException {
+        metadataFile.seek(0);
+        // setting initial term to 0
+        metadataFile.writeInt(0);
+        metadataFile.getChannel().force(true);
+    }
+
+    @Override
+    public void setTerm(int newTerm) throws IOException {
+        metadataFile.seek(0);
+        metadataFile.writeInt(newTerm);
+        metadataFile.getChannel().force(true);
+    }
+    @Override
+    public int getCurrentTerm() throws IOException {
+        metadataFile.seek(0);
+        return metadataFile.readInt();
     }
 
     @Override

@@ -1,12 +1,14 @@
 package com.kv.store;
 
-import com.kvs.Kvservice;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
 public interface LogStore {
+    void setTerm(int newTerm) throws IOException;
+
+    int getCurrentTerm() throws IOException;
+
     void WriteToIndex (Log log, int index) throws IOException;
     void WriteAtEnd(Log log) throws IOException;
 
