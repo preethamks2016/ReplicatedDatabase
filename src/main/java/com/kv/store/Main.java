@@ -27,8 +27,10 @@ public class Main {
         ExecutorService executor = Executors.newFixedThreadPool(2);
         CompletionService<Boolean> completionService = new ExecutorCompletionService<>(executor);
         for (int i = 0 ; i < 1; i++) {
-            client.put(i, i*2);
+            client.put(i+1, i*2);
         }
+
+
 
         Thread.sleep(10000);
 
@@ -40,6 +42,8 @@ public class Main {
         LogStore logStore3 = new LogStoreImpl("log5052.txt", "meta5052.txt");
         List<Log> logs;
 //
+        System.out.println(logStore3.ReadAtIndex(11).get().getKey());
+
         logs = logStore1.readAllLogs();
         for(Log log:logs) {
             System.out.println("idx: "+ log.getIndex() + ", term: "+ log.getTerm() + ", key: " + log.getKey() + ", value: " + log.getValue());

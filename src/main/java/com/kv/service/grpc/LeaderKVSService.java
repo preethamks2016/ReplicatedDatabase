@@ -1,5 +1,6 @@
 package com.kv.service.grpc;
 
+import com.kv.store.KVStore;
 import com.kv.store.Log;
 import com.kv.store.LogStore;
 import com.kvs.Kvservice;
@@ -23,8 +24,8 @@ public class LeaderKVSService extends KVService {
 
     ReentrantLock lock;
 
-    LeaderKVSService(LogStore logStore, List<Map<String, Object>> servers) {
-        super(logStore, servers);
+    LeaderKVSService(LogStore logStore, List<Map<String, Object>> servers, KVStore stateMachine) {
+        super(logStore, servers, stateMachine);
         lock = new ReentrantLock();
         executor = Executors.newFixedThreadPool(5);
         syncObjects = new ArrayList<ConcurrentHashMap<Integer, Object>>();
@@ -163,6 +164,11 @@ public class LeaderKVSService extends KVService {
         }
 
         return;
+    }
+
+    @Override
+    public int get(int key) {
+        return this.stateMachine.get(key);
     }
 
     private Kvservice.APERequest populateAPERequest(Log prevLog, Log currentLog) {

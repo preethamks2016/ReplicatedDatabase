@@ -1,5 +1,6 @@
 package com.kv.service.grpc;
 
+import com.kv.store.KVStore;
 import com.kv.store.Log;
 import com.kv.store.LogStore;
 import com.kvs.Kvservice;
@@ -13,13 +14,18 @@ import java.util.Map;
 import java.util.Optional;
 
 public class FollowerKVSService extends KVService {
-    public FollowerKVSService(LogStore logStore) {
-        super(logStore, new ArrayList<Map<String, Object>>());
+    public FollowerKVSService(LogStore logStore, KVStore stateMachine) {
+        super(logStore, new ArrayList<Map<String, Object>>(), stateMachine);
     }
 
     @Override
     public void put(int key, int value) {
 
+    }
+
+    @Override
+    public int get(int key) {
+        return 0;
     }
 
     @Override

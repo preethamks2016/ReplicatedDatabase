@@ -1,5 +1,6 @@
 package com.kv.service.grpc;
 
+import com.kv.store.KVStore;
 import com.kv.store.LogStore;
 import com.kvs.Kvservice;
 import io.grpc.ManagedChannel;
@@ -18,8 +19,9 @@ public abstract class KVService {
     protected LogStore logStore;
     protected Logger logger;
     protected List<KVSClient> clients;
+    protected KVStore stateMachine;
 
-    public KVService (LogStore logStore, List<Map<String, Object>> servers) {
+    public KVService (LogStore logStore, List<Map<String, Object>> servers, KVStore stateMachine) {
 //        String serverAddress = "localhost:50051";
 //        ManagedChannel channel = ManagedChannelBuilder.forTarget(serverAddress)
 //                .usePlaintext()
@@ -27,12 +29,6 @@ public abstract class KVService {
 //        this.client = new KVSClient(channel);
         clients = new ArrayList<KVSClient>();
         for (Map<String, Object> server : servers) {
-//            RetryPolicy retryPolicy = RetryPolicy.newBuilder()
-//                    .setMaxAttempts(3)
-//                    .setInitialBackoff(Duration.ofMillis(100))
-//                    .setMaxBackoff(Duration.ofMillis(1000))
-//                    .setJitter(Jitter.uniform())
-//                    .build();
             ManagedChannel channel = ManagedChannelBuilder.forTarget(server.get("ip").toString() + ":" + server.get("port").toString())
                                         .usePlaintext()
                                         .enableRetry()
@@ -44,11 +40,13 @@ public abstract class KVService {
         }
 
         this.logStore = logStore;
+        this.stateMachine = stateMachine;
         this.logger = LogManager.getLogger(KVService.class);
         BasicConfigurator.configure();
     }
 
     public abstract void put(int key, int value);
+    public abstract int get(int key);
     public abstract void start();
 
     public abstract ServiceType getType();

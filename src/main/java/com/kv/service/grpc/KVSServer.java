@@ -1,5 +1,7 @@
 package com.kv.service.grpc;
 
+import com.kv.store.KVStore;
+import com.kv.store.KVStoreImpl;
 import com.kv.store.LogStore;
 import com.kv.store.LogStoreImpl;
 import com.kvs.Kvservice;
@@ -24,9 +26,10 @@ public class KVSServer {
 
     private void start(ServiceType serviceType, int port) throws IOException {
         LogStore logStore = new LogStoreImpl("log" + port + ".txt", "meta" + port + ".txt");
+        KVStore stateMachine = new KVStoreImpl();
 
         ReadAllServers(port);
-        KVServiceFactory.instantiateClasses(serviceType, logStore, servers);
+        KVServiceFactory.instantiateClasses(serviceType, logStore, servers, stateMachine);
         server = ServerBuilder.forPort(port).addService(new KVSImpl()).build().start();
 
         // start
@@ -84,6 +87,17 @@ public class KVSServer {
             responseObserver.onCompleted();
         }
 
+        public void get(Kvservice.GetRequest req, StreamObserver<Kvservice.GetResponse> responseObserver) {
+            logger.info("Got request from client: " + req);
+            int response = kvService.get(req.getKey());
+
+            Kvservice.GetResponse reply = Kvservice.GetResponse.newBuilder().setValue(
+                    response
+            ).build();
+            responseObserver.onNext(reply);
+            responseObserver.onCompleted();
+        }
+
         public void appendEntriesRPC(Kvservice.APERequest req, StreamObserver<Kvservice.APEResponse> responseObserver) {
             logger.info("Got request from client: index:" + (req.getPrevLogIndex()+1) + ", nEntries: " + req.getEntryList().size());
             Kvservice.APEResponse reply  = kvService.appendEntries(req);
@@ -102,16 +116,16 @@ public class KVSServer {
             return kvService;
         }
 
-        public static void instantiateClasses(ServiceType type, LogStore logStore, List<Map<String, Object>> servers) throws IOException {
+        public static void instantiateClasses(ServiceType type, LogStore logStore, List<Map<String, Object>> servers, KVStore stateMachine) throws IOException {
             switch (type){
                 case LEADER:
-                    kvService = new LeaderKVSService(logStore, servers);
+                    kvService = new LeaderKVSService(logStore, servers, stateMachine);
                     break;
                 case FOLLOWER:
-                    kvService = new FollowerKVSService(logStore);
+                    kvService = new FollowerKVSService(logStore, stateMachine);
                     break;
                 case CANDIDATE:
-                    kvService = new CandidateKVSService(logStore, servers);
+                    kvService = new CandidateKVSService(logStore, servers, stateMachine);
                     break;
             }
         }
