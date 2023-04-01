@@ -18,12 +18,60 @@ public class LeaderKVSService extends KVService {
 
     private ExecutorService executor;
 
+    // For every client maintain sync objects for every log index
+    private List<ConcurrentHashMap<Integer, Object>> syncObjects;
+
     ReentrantLock lock;
 
     LeaderKVSService(LogStore logStore, List<Map<String, Object>> servers) {
         super(logStore, servers);
         lock = new ReentrantLock();
-        executor = Executors.newFixedThreadPool(5);
+        executor = Executors.newFixedThreadPool(2);
+        syncObjects = new ArrayList<ConcurrentHashMap<Integer, Object>>();
+        for (int i = 0; i < clients.size(); i++) {
+            syncObjects.add(new ConcurrentHashMap<Integer, Object>());
+        }
+    }
+
+    public Kvservice.APEResponse appendEntries(KVSClient client, Log prevLog, Log currentLog) throws IOException {
+
+        Kvservice.APERequest request =  populateAPERequest(prevLog, currentLog);
+        Kvservice.APEResponse response = client.appendEntries(request);
+        while (!response.getSuccess()) {
+            if(response.getCurrentTerm() > request.getLeaderTerm()) {
+                // follower term is greater than leader : fall back to follower state
+            } else {
+                // try comparing prev index - 1
+                List<Kvservice.Entry> entries = new ArrayList<>();
+                entries.add(getRequestEntry(prevLog));
+                entries.addAll(request.getEntryList());
+
+                Optional<Log> optionalLog = logStore.ReadAtIndex(prevLog.getIndex() - 1);
+                prevLog = optionalLog.get();
+                request = setPrevLogEntries(request, prevLog, entries);
+                response = client.appendEntries(request);
+            }
+        }
+        return response;
+    }
+
+    private Kvservice.APERequest setPrevLogEntries(Kvservice.APERequest request, Log prevLog, List<Kvservice.Entry> entries) {
+
+        request = request.toBuilder()
+                .setPrevLogIndex(prevLog == null ? -1 : prevLog.getIndex())
+                .setPrevLogTerm(prevLog == null ? -1 : prevLog.getTerm())
+                .addAllEntry(entries)
+                .build();
+        return request;
+    }
+
+    private Kvservice.Entry getRequestEntry(Log log) {
+        Kvservice.Entry entry = Kvservice.Entry.newBuilder()
+                .setIndex(log.getIndex())
+                .setTerm(log.getTerm())
+                .setKey(log.getKey())
+                .setValue(log.getValue()).build();
+        return entry;
     }
 
     @Override
@@ -33,6 +81,8 @@ public class LeaderKVSService extends KVService {
             Log prevLog;
             Log currentLog;
             Optional<Log> optionalLog = logStore.getLastLogEntry();
+
+            // write to own log
             if (optionalLog.isPresent()) {
                 prevLog = optionalLog.get();
                 currentLog = new Log(prevLog.getIndex() + 1, prevLog.getTerm(), key, value);
@@ -42,29 +92,51 @@ public class LeaderKVSService extends KVService {
                 currentLog =  new Log(0, 0, key, value);
                 logStore.WriteToIndex(currentLog, currentLog.getIndex());
             }
+
+            // create new sync object for current index
+            for (int i = 0; i < clients.size(); i++)
+                syncObjects.get(i).put(currentLog.getIndex(), new Object());
+
             lock.unlock();
-
-
 
             Kvservice.APERequest request =  populateAPERequest(prevLog, currentLog);
 
+            int currentLogIndex = currentLog.getIndex();
             CompletionService<Kvservice.APEResponse> completionService = new ExecutorCompletionService<>(executor);
-            for (KVSClient client : clients) {
+            for (int i = 0; i < clients.size(); i++) {
+                int clientIdx = i;
                 completionService.submit(() -> {
-                    Kvservice.APEResponse response;
-                    do {
-                        response = client.appendEntries(request);
-                        if (response.getSuccess()) break;
-                    } while (true);
 
-                    // todo : handle this request
+                    // synchronization wait for previous log index to complete
+                    if (syncObjects.get(clientIdx).contains(currentLogIndex-1)) {
+                        Object prevObject = syncObjects.get(clientIdx).get(currentLogIndex-1);
+
+                        try {
+                            synchronized (prevObject) {
+                                prevObject.wait();
+                            }
+                        }
+                        catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    Kvservice.APEResponse response = appendEntries(clients.get(clientIdx), prevLog, currentLog);
+
+                    // notify future put requests
+                    Object currentSyncObject = syncObjects.get(clientIdx).get(currentLogIndex);
+                    synchronized (currentSyncObject) {
+                        syncObjects.get(clientIdx).remove(currentLogIndex);
+                        currentSyncObject.notify();
+                    }
+
                     return response;
                 });
             }
 
             int ackCount = 1;
             int totalServers = clients.size() + 1;
-            while (ackCount < totalServers) {
+            while (ackCount <= totalServers/2) {
                 try {
                     Future<Kvservice.APEResponse> completedTask = completionService.take();
                     if (completedTask.get().getSuccess()) {
