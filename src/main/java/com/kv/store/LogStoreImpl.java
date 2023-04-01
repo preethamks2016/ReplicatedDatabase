@@ -16,13 +16,14 @@ public class LogStoreImpl implements LogStore {
     private final RandomAccessFile metadataFile;
     ReentrantLock lock;
 
+    private Integer currentTerm = null;
+
 
     public LogStoreImpl(String fileName, String metadataFileName) throws IOException {
         this.fileName = fileName;
         this.file = new RandomAccessFile(fileName, "rw");
         long offset = file.length();
         this.metadataFile = new RandomAccessFile(metadataFileName, "rw");
-        setInitialTerm();
         lock = new ReentrantLock();
     }
 
@@ -36,11 +37,23 @@ public class LogStoreImpl implements LogStore {
         metadataFile.seek(0);
         metadataFile.writeInt(newTerm);
         metadataFile.getChannel().force(true);
+        currentTerm = newTerm;
     }
     @Override
     public int getCurrentTerm() throws IOException {
-        metadataFile.seek(0);
-        return metadataFile.readInt();
+        if (currentTerm != null) return currentTerm; //in-memory
+
+        // read from metadata file
+        // if current term doesn't exist in file, initialise it to 0
+        synchronized (this) {
+            if (metadataFile.length() == 0) {
+                setInitialTerm();
+            } else {
+                metadataFile.seek(0);
+                currentTerm = metadataFile.readInt();
+            }
+        }
+        return currentTerm;
     }
 
     @Override
