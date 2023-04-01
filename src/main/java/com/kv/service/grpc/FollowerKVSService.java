@@ -1,5 +1,6 @@
 package com.kv.service.grpc;
 
+import com.kv.store.KVStore;
 import com.kv.store.Log;
 import com.kv.store.LogStore;
 import com.kvs.Kvservice;
@@ -8,13 +9,12 @@ import com.kvs.Kvservice.APEResponse;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 public class FollowerKVSService extends KVService {
-    public FollowerKVSService(LogStore logStore) {
-        super(logStore, new ArrayList<Map<String, Object>>());
+    public FollowerKVSService(LogStore logStore, KVStore kvStore) {
+        super(logStore, new ArrayList<Map<String, Object>>(), kvStore);
     }
 
     @Override

@@ -1,5 +1,6 @@
 package com.kv.service.grpc;
 
+import com.kv.store.KVStore;
 import com.kv.store.LogStore;
 
 import java.util.List;
@@ -8,8 +9,8 @@ import java.util.Map;
 public class CandidateKVSService extends KVService{
 
     List<Map<String, Object>> servers;
-    public CandidateKVSService(LogStore logStore,  List<Map<String, Object>> servers) {
-        super(logStore, servers);
+    public CandidateKVSService(LogStore logStore,  List<Map<String, Object>> servers, KVStore kvStore) {
+        super(logStore, servers, kvStore);
         this.servers = servers;
     }
 

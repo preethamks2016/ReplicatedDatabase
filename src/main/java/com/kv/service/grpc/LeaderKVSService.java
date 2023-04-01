@@ -1,10 +1,9 @@
 package com.kv.service.grpc;
 
+import com.kv.store.KVStore;
 import com.kv.store.Log;
 import com.kv.store.LogStore;
 import com.kvs.Kvservice;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -23,8 +22,8 @@ public class LeaderKVSService extends KVService {
 
     ReentrantLock lock;
 
-    LeaderKVSService(LogStore logStore, List<Map<String, Object>> servers) {
-        super(logStore, servers);
+    LeaderKVSService(LogStore logStore, List<Map<String, Object>> servers, KVStore kvStore) {
+        super(logStore, servers, kvStore);
         lock = new ReentrantLock();
         executor = Executors.newFixedThreadPool(5);
         syncObjects = new ArrayList<ConcurrentHashMap<Integer, Object>>();
@@ -67,6 +66,7 @@ public class LeaderKVSService extends KVService {
                 .setPrevLogIndex(prevLog == null ? -1 : prevLog.getIndex())
                 .setPrevLogTerm(prevLog == null ? -1 : prevLog.getTerm())
                 .addAllEntry(entries)
+                .setLeaderCommitIdx(commitIndex)
                 .build();
         return newRequest;
     }
@@ -135,6 +135,11 @@ public class LeaderKVSService extends KVService {
                         syncObjects.get(clientIdx).remove(currentLogIndex);
                         currentSyncObject.notify();
                     }
+                    synchronized (this) {
+                        //add it to key store
+                        kvStore.put(key, value);
+                        commitIndex = currentLogIndex;
+                    }
 
                     return response;
                 });
@@ -180,6 +185,7 @@ public class LeaderKVSService extends KVService {
                 .setPrevLogIndex(prevLog == null ? -1 : prevLog.getIndex())
                 .setPrevLogTerm(prevLog == null ? -1 : prevLog.getTerm())
                 .addAllEntry(entries)
+                .setLeaderCommitIdx(commitIndex)
                 .build();
         return request;
 

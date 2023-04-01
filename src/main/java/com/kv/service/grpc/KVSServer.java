@@ -1,5 +1,7 @@
 package com.kv.service.grpc;
 
+import com.kv.store.KVStore;
+import com.kv.store.KVStoreImpl;
 import com.kv.store.LogStore;
 import com.kv.store.LogStoreImpl;
 import com.kvs.Kvservice;
@@ -24,9 +26,9 @@ public class KVSServer {
 
     private void start(ServiceType serviceType, int port) throws IOException {
         LogStore logStore = new LogStoreImpl("log" + port + ".txt", "meta" + port + ".txt");
-
+        KVStore kvStore = new KVStoreImpl();
         ReadAllServers(port);
-        KVServiceFactory.instantiateClasses(serviceType, logStore, servers);
+        KVServiceFactory.instantiateClasses(serviceType, logStore, servers, kvStore);
         server = ServerBuilder.forPort(port).addService(new KVSImpl()).build().start();
 
         // start
@@ -102,16 +104,16 @@ public class KVSServer {
             return kvService;
         }
 
-        public static void instantiateClasses(ServiceType type, LogStore logStore, List<Map<String, Object>> servers) throws IOException {
+        public static void instantiateClasses(ServiceType type, LogStore logStore, List<Map<String, Object>> servers, KVStore kvStore) throws IOException {
             switch (type){
                 case LEADER:
-                    kvService = new LeaderKVSService(logStore, servers);
+                    kvService = new LeaderKVSService(logStore, servers, kvStore);
                     break;
                 case FOLLOWER:
-                    kvService = new FollowerKVSService(logStore);
+                    kvService = new FollowerKVSService(logStore, kvStore);
                     break;
                 case CANDIDATE:
-                    kvService = new CandidateKVSService(logStore, servers);
+                    kvService = new CandidateKVSService(logStore, servers, kvStore);
                     break;
             }
         }

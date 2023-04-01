@@ -1,5 +1,6 @@
 package com.kv.service.grpc;
 
+import com.kv.store.KVStore;
 import com.kv.store.LogStore;
 import com.kvs.Kvservice;
 import io.grpc.ManagedChannel;
@@ -19,13 +20,18 @@ public abstract class KVService {
     protected Logger logger;
     protected List<KVSClient> clients;
 
-    public KVService (LogStore logStore, List<Map<String, Object>> servers) {
+    protected KVStore kvStore;
+
+    protected int commitIndex = -1;
+
+    public KVService (LogStore logStore, List<Map<String, Object>> servers, KVStore kvStore) {
 //        String serverAddress = "localhost:50051";
 //        ManagedChannel channel = ManagedChannelBuilder.forTarget(serverAddress)
 //                .usePlaintext()
 //                .build();
 //        this.client = new KVSClient(channel);
         clients = new ArrayList<KVSClient>();
+        this.kvStore = kvStore;
         for (Map<String, Object> server : servers) {
 //            RetryPolicy retryPolicy = RetryPolicy.newBuilder()
 //                    .setMaxAttempts(3)
