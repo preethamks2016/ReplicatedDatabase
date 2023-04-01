@@ -60,12 +60,10 @@ public class FollowerKVSService extends KVService {
             int currentIndex = logEntry.getIndex();
             // Case 3: if existing entry does not match delete the existing entry and all that follow it
             Optional<Log> currentLog = logStore.ReadAtIndex(currentIndex);
-            if (!(currentLog.isPresent()
-                    && logEntry.getIndex() == currentLog.get().getIndex()
+            if (currentLog.isPresent() && !(logEntry.getIndex() == currentLog.get().getIndex()
                     && logEntry.getTerm() == currentLog.get().getTerm()
                     && logEntry.getKey() == currentLog.get().getKey()
                     && logEntry.getValue() == currentLog.get().getValue())) {
-
                 // mark -1s
                 logStore.markEnding(currentIndex);
             }
