@@ -1,5 +1,6 @@
 package com.kv.service.grpc;
 
+import com.kv.service.grpc.exception.HeartBeatMissedException;
 import com.kv.store.LogStore;
 import com.kv.store.LogStoreImpl;
 import com.kvs.Kvservice;
@@ -30,10 +31,18 @@ public class KVSServer {
         server = ServerBuilder.forPort(port).addService(new KVSImpl()).build().start();
 
         // start
-        try {
-            KVServiceFactory.getInstance().start();
-        } catch (Exception e) {
+        while(true) {
+            try {
+                KVServiceFactory.getInstance().start();
+            } catch (HeartBeatMissedException e) {
+                // thrown when a follower does not receive messages from leader
+                // Changing to candidate state
+                KVServiceFactory.instantiateClasses(ServiceType.CANDIDATE, logStore, servers);
 
+            } catch (Exception e) {
+                // if any other unexpected exception
+                break;
+            }
         }
 
         logger.info("Server started, listening on " + port);

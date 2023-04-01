@@ -20,6 +20,10 @@ public class LeaderKVSService extends KVService {
 
     ReentrantLock lock;
 
+    long lastSentTime = 0L;
+
+    boolean valid = true;
+
     LeaderKVSService(LogStore logStore, List<Map<String, Object>> servers) {
         super(logStore, servers);
         lock = new ReentrantLock();
@@ -109,7 +113,31 @@ public class LeaderKVSService extends KVService {
 
     @Override
     public void start() {
+        long threshold = 5 * 1000; // 5 seconds for now
+        while (valid) {
+            if (System.currentTimeMillis() - lastSentTime > threshold) {
+                //send appendEntries
+                Kvservice.APERequest request = Kvservice.APERequest.newBuilder()
+                        .addAllEntry(null)
+                        .build();
+                CompletionService<Kvservice.APEResponse> completionService = new ExecutorCompletionService<>(executor);
+                for (KVSClient client : clients) {
+                    completionService.submit(() -> {
+                        Kvservice.APEResponse response;
+                        response = client.appendEntries(request);
+                        return response;
+                    });
+                }
+                lastSentTime = System.currentTimeMillis();
+            }
+        }
 
+    }
+
+    @Override
+    public void stop() {
+        // should be called when receiving append rpc entries with higher term
+        valid = false;
     }
 
     @Override

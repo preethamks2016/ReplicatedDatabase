@@ -1,5 +1,6 @@
 package com.kv.service.grpc;
 
+import com.kv.service.grpc.exception.HeartBeatMissedException;
 import com.kv.store.Log;
 import com.kv.store.LogStore;
 import com.kvs.Kvservice;
@@ -13,8 +14,12 @@ import java.util.Map;
 import java.util.Optional;
 
 public class FollowerKVSService extends KVService {
+
+    long lastReceivedTS;
+
     public FollowerKVSService(LogStore logStore) {
         super(logStore, new ArrayList<Map<String, Object>>());
+        lastReceivedTS = System.currentTimeMillis();
     }
 
     @Override
@@ -23,7 +28,20 @@ public class FollowerKVSService extends KVService {
     }
 
     @Override
-    public void start() {
+    public void start() throws HeartBeatMissedException {
+        long threshhold = 7 * 1000;
+        while (true) {
+            if(System.currentTimeMillis() - lastReceivedTS > threshhold) {
+                //todo :: increase term
+                throw new HeartBeatMissedException();
+                // leader election;
+            }
+        }
+
+    }
+
+    @Override
+    public void stop() {
 
     }
 
@@ -35,6 +53,13 @@ public class FollowerKVSService extends KVService {
     @Override
     public APEResponse appendEntries(APERequest req) {
         try {
+            synchronized(this) {
+                lastReceivedTS = System.currentTimeMillis();
+            }
+            if(req.getEntryList() == null) {
+                // Heart beat request
+                return APEResponse.newBuilder().setSuccess(true).build();
+            }
             if (req.getPrevLogIndex() != -1) {
                 //todo: can maintain local state
                 int currentTerm = getCurrentTerm();

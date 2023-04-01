@@ -1,5 +1,7 @@
 package com.kv.service.grpc;
 
+import com.kv.service.grpc.exception.HeartBeatMissedException;
+import com.kv.service.grpc.exception.LeaderElectedException;
 import com.kv.store.LogStore;
 import com.kvs.Kvservice;
 import io.grpc.ManagedChannel;
@@ -41,7 +43,9 @@ public abstract class KVService {
     }
 
     public abstract void put(int key, int value);
-    public abstract void start();
+    public abstract void start() throws HeartBeatMissedException, LeaderElectedException;
+
+    public abstract void stop();
 
     public abstract ServiceType getType();
 
