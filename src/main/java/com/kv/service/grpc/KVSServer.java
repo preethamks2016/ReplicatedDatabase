@@ -85,7 +85,7 @@ public class KVSServer {
         }
 
         public void appendEntriesRPC(Kvservice.APERequest req, StreamObserver<Kvservice.APEResponse> responseObserver) {
-            logger.info("Got request from client: " + req);
+            logger.info("Got request from client: index:" + (req.getPrevLogIndex()+1) + ", nEntries: " + req.getEntryList().size());
             Kvservice.APEResponse reply  = kvService.appendEntries(req);
             responseObserver.onNext(reply);
             responseObserver.onCompleted();

@@ -6,6 +6,7 @@ import io.grpc.Channel;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
+import lombok.SneakyThrows;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,6 +36,7 @@ public class KVSClient {
         logger.info("Got following from the server: " + response.getValue());
     }
 
+    @SneakyThrows
     public Kvservice.APEResponse appendEntries(Kvservice.APERequest request) {
 //        Kvservice.Entry entry = Kvservice.Entry.newBuilder()
 //                .setIndex(prevIndex + 1)
@@ -51,13 +53,20 @@ public class KVSClient {
 //                .addAllEntry(entries)
 //                .build();
 
-        logger.info("Sending to server: " + request);
         Kvservice.APEResponse response = null;
-        try {
-            response = blockingStub.appendEntriesRPC(request);
-        } catch (StatusRuntimeException e) {
-            logger.log(Level.WARNING, "RPC failed: {0}", e.getStatus());
+
+        while (true) {
+            try {
+                logger.info("Sending to server: " + request);
+                response = blockingStub.appendEntriesRPC(request);
+                break;
+            } catch (StatusRuntimeException e) {
+                logger.log(Level.WARNING, "RPC failed: {0}", e.getStatus());
+                Thread.sleep(1000);
+            }
         }
+
+
         return response;
     }
 

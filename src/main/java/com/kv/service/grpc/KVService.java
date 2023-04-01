@@ -27,8 +27,16 @@ public abstract class KVService {
 //        this.client = new KVSClient(channel);
         clients = new ArrayList<KVSClient>();
         for (Map<String, Object> server : servers) {
+//            RetryPolicy retryPolicy = RetryPolicy.newBuilder()
+//                    .setMaxAttempts(3)
+//                    .setInitialBackoff(Duration.ofMillis(100))
+//                    .setMaxBackoff(Duration.ofMillis(1000))
+//                    .setJitter(Jitter.uniform())
+//                    .build();
             ManagedChannel channel = ManagedChannelBuilder.forTarget(server.get("ip").toString() + ":" + server.get("port").toString())
                                         .usePlaintext()
+                                        .enableRetry()
+                                        .maxRetryAttempts(10000)
                                         .build();
 
             KVSClient client = new KVSClient(channel);

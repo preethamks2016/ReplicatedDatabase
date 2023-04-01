@@ -26,7 +26,7 @@ public class LeaderKVSService extends KVService {
     LeaderKVSService(LogStore logStore, List<Map<String, Object>> servers) {
         super(logStore, servers);
         lock = new ReentrantLock();
-        executor = Executors.newFixedThreadPool(2);
+        executor = Executors.newFixedThreadPool(5);
         syncObjects = new ArrayList<ConcurrentHashMap<Integer, Object>>();
         for (int i = 0; i < clients.size(); i++) {
             syncObjects.add(new ConcurrentHashMap<Integer, Object>());
@@ -45,9 +45,14 @@ public class LeaderKVSService extends KVService {
                 List<Kvservice.Entry> entries = new ArrayList<>();
                 entries.add(getRequestEntry(prevLog));
                 entries.addAll(request.getEntryList());
+                if (prevLog.getIndex() != 0) {
+                    Optional<Log> optionalLog = logStore.ReadAtIndex(prevLog.getIndex() - 1);
+                    prevLog = optionalLog.get();
+                }
+                else {
+                    prevLog = null;
+                }
 
-                Optional<Log> optionalLog = logStore.ReadAtIndex(prevLog.getIndex() - 1);
-                prevLog = optionalLog.get();
                 request = setPrevLogEntries(request, prevLog, entries);
                 response = client.appendEntries(request);
             }
@@ -57,12 +62,13 @@ public class LeaderKVSService extends KVService {
 
     private Kvservice.APERequest setPrevLogEntries(Kvservice.APERequest request, Log prevLog, List<Kvservice.Entry> entries) {
 
-        request = request.toBuilder()
+        Kvservice.APERequest newRequest = Kvservice.APERequest.newBuilder()
+                .setLeaderTerm(request.getLeaderTerm())
                 .setPrevLogIndex(prevLog == null ? -1 : prevLog.getIndex())
                 .setPrevLogTerm(prevLog == null ? -1 : prevLog.getTerm())
                 .addAllEntry(entries)
                 .build();
-        return request;
+        return newRequest;
     }
 
     private Kvservice.Entry getRequestEntry(Log log) {
