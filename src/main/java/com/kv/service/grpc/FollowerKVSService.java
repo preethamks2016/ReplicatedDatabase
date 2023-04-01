@@ -44,8 +44,10 @@ public class FollowerKVSService extends KVService {
             }
 
             // update currentTerm to latest term seen from leader
-            currentTerm = req.getLeaderTerm();
-            logStore.setTerm(currentTerm);
+            if (currentTerm != req.getLeaderTerm()) {
+                logStore.setTerm(req.getLeaderTerm());
+                currentTerm = req.getLeaderTerm();
+            }
 
             // Case 2: if NOT the first log from the leader / previous log data exists in leader
             if (req.getPrevLogIndex() != -1) {
