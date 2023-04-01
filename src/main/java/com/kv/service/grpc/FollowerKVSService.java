@@ -70,13 +70,14 @@ public class FollowerKVSService extends KVService {
                 logStore.markEnding(currentIndex);
             }
 
-
             // todo: check commit index
 
-            // Write the new log
-            Log newLog = new Log(logEntry.getIndex(), logEntry.getTerm(), logEntry.getKey(), logEntry.getValue());
-            logStore.WriteToIndex(newLog, currentIndex);
-
+            // Write the new logs
+            for (Kvservice.Entry entry : req.getEntryList()) {
+                Log newLog = new Log(entry.getIndex(), entry.getTerm(), entry.getKey(), entry.getValue());
+                logStore.WriteToIndex(newLog, currentIndex);
+                currentIndex++;
+            }
             return APEResponse.newBuilder().setCurrentTerm(currentTerm).setSuccess(true).build();
         } catch (IOException ex) {
             logger.error("IO error");
