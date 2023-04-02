@@ -19,15 +19,19 @@ public abstract class KVService {
     protected LogStore logStore;
     protected Logger logger;
     protected List<KVSClient> clients;
-    protected KVStore stateMachine;
 
-    public KVService (LogStore logStore, List<Map<String, Object>> servers, KVStore stateMachine) {
+    protected KVStore kvStore;
+
+    protected int commitIndex = -1;
+
+    public KVService (LogStore logStore, List<Map<String, Object>> servers, KVStore kvStore) {
 //        String serverAddress = "localhost:50051";
 //        ManagedChannel channel = ManagedChannelBuilder.forTarget(serverAddress)
 //                .usePlaintext()
 //                .build();
 //        this.client = new KVSClient(channel);
         clients = new ArrayList<KVSClient>();
+        this.kvStore = kvStore;
         for (Map<String, Object> server : servers) {
             ManagedChannel channel = ManagedChannelBuilder.forTarget(server.get("ip").toString() + ":" + server.get("port").toString())
                                         .usePlaintext()
@@ -40,7 +44,6 @@ public abstract class KVService {
         }
 
         this.logStore = logStore;
-        this.stateMachine = stateMachine;
         this.logger = LogManager.getLogger(KVService.class);
         BasicConfigurator.configure();
     }

@@ -26,10 +26,9 @@ public class KVSServer {
 
     private void start(ServiceType serviceType, int port) throws IOException {
         LogStore logStore = new LogStoreImpl("log" + port + ".txt", "meta" + port + ".txt");
-        KVStore stateMachine = new KVStoreImpl();
-
+        KVStore kvStore = new KVStoreImpl();
         ReadAllServers(port);
-        KVServiceFactory.instantiateClasses(serviceType, logStore, servers, stateMachine);
+        KVServiceFactory.instantiateClasses(serviceType, logStore, servers, kvStore);
         server = ServerBuilder.forPort(port).addService(new KVSImpl()).build().start();
 
         // start
@@ -116,16 +115,16 @@ public class KVSServer {
             return kvService;
         }
 
-        public static void instantiateClasses(ServiceType type, LogStore logStore, List<Map<String, Object>> servers, KVStore stateMachine) throws IOException {
+        public static void instantiateClasses(ServiceType type, LogStore logStore, List<Map<String, Object>> servers, KVStore kvStore) throws IOException {
             switch (type){
                 case LEADER:
-                    kvService = new LeaderKVSService(logStore, servers, stateMachine);
+                    kvService = new LeaderKVSService(logStore, servers, kvStore);
                     break;
                 case FOLLOWER:
-                    kvService = new FollowerKVSService(logStore, stateMachine);
+                    kvService = new FollowerKVSService(logStore, kvStore);
                     break;
                 case CANDIDATE:
-                    kvService = new CandidateKVSService(logStore, servers, stateMachine);
+                    kvService = new CandidateKVSService(logStore, servers, kvStore);
                     break;
             }
         }

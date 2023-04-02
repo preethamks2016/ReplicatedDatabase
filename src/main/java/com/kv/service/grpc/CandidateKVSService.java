@@ -9,8 +9,8 @@ import java.util.Map;
 public class CandidateKVSService extends KVService{
 
     List<Map<String, Object>> servers;
-    public CandidateKVSService(LogStore logStore, List<Map<String, Object>> servers, KVStore stateMachine) {
-        super(logStore, servers, stateMachine);
+    public CandidateKVSService(LogStore logStore,  List<Map<String, Object>> servers, KVStore kvStore) {
+        super(logStore, servers, kvStore);
         this.servers = servers;
     }
 

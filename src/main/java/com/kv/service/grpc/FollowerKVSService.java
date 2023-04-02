@@ -9,13 +9,12 @@ import com.kvs.Kvservice.APEResponse;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 public class FollowerKVSService extends KVService {
-    public FollowerKVSService(LogStore logStore, KVStore stateMachine) {
-        super(logStore, new ArrayList<Map<String, Object>>(), stateMachine);
+    public FollowerKVSService(LogStore logStore, KVStore kvStore) {
+        super(logStore, new ArrayList<Map<String, Object>>(), kvStore);
     }
 
     @Override
