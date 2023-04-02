@@ -37,7 +37,7 @@ public class FollowerKVSService extends KVService {
         try {
 
             // Case 1: compare terms
-            int currentTerm = logStore.getCurrentTerm();
+            int currentTerm = logStore.getCurrentTerm(); //todo: can maintain local state
             if (req.getLeaderTerm() < currentTerm) {
                 logger.error("leader term less than current term of follower");
                 return APEResponse.newBuilder().setCurrentTerm(currentTerm).setSuccess(false).build();
@@ -70,26 +70,14 @@ public class FollowerKVSService extends KVService {
                 logStore.markEnding(currentIndex);
             }
 
+            // todo: check commit index
+
             // Write the new logs
             for (Kvservice.Entry entry : req.getEntryList()) {
                 Log newLog = new Log(entry.getIndex(), entry.getTerm(), entry.getKey(), entry.getValue());
                 logStore.WriteToIndex(newLog, currentIndex);
                 currentIndex++;
             }
-
-            // commit
-            if (req.getLeaderCommitIdx() > commitIndex) {
-                Optional<Log> lastLog = logStore.getLastLogEntry();
-                int lastEntryIndex = lastLog.map(Log::getIndex).orElse(-1);
-                int newCommitIndex = Math.min(req.getLeaderCommitIdx(), lastEntryIndex);
-                // apply to state machine
-                for (int i=commitIndex+1; i<= newCommitIndex; i++) {
-                    Log log = logStore.ReadAtIndex(i).get();
-                    kvStore.put(log.getKey(), log.getValue());
-                }
-                commitIndex = newCommitIndex;
-            }
-
             return APEResponse.newBuilder().setCurrentTerm(currentTerm).setSuccess(true).build();
         } catch (IOException ex) {
             logger.error("IO error");
