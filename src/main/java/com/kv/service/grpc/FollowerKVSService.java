@@ -23,6 +23,11 @@ public class FollowerKVSService extends KVService {
     }
 
     @Override
+    public int get(int key) {
+        return 0;
+    }
+
+    @Override
     public void start() {
 
     }

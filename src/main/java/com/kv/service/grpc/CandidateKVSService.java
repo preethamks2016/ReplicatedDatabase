@@ -20,6 +20,11 @@ public class CandidateKVSService extends KVService{
     }
 
     @Override
+    public int get(int key) {
+        return 0;
+    }
+
+    @Override
     public void start() {
 
     }

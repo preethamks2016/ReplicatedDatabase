@@ -86,6 +86,17 @@ public class KVSServer {
             responseObserver.onCompleted();
         }
 
+        public void get(Kvservice.GetRequest req, StreamObserver<Kvservice.GetResponse> responseObserver) {
+            logger.info("Got request from client: " + req);
+            int response = kvService.get(req.getKey());
+
+            Kvservice.GetResponse reply = Kvservice.GetResponse.newBuilder().setValue(
+                    response
+            ).build();
+            responseObserver.onNext(reply);
+            responseObserver.onCompleted();
+        }
+
         public void appendEntriesRPC(Kvservice.APERequest req, StreamObserver<Kvservice.APEResponse> responseObserver) {
             logger.info("Got request from client: index:" + (req.getPrevLogIndex()+1) + ", nEntries: " + req.getEntryList().size());
             Kvservice.APEResponse reply  = kvService.appendEntries(req);

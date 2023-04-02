@@ -33,12 +33,6 @@ public abstract class KVService {
         clients = new ArrayList<KVSClient>();
         this.kvStore = kvStore;
         for (Map<String, Object> server : servers) {
-//            RetryPolicy retryPolicy = RetryPolicy.newBuilder()
-//                    .setMaxAttempts(3)
-//                    .setInitialBackoff(Duration.ofMillis(100))
-//                    .setMaxBackoff(Duration.ofMillis(1000))
-//                    .setJitter(Jitter.uniform())
-//                    .build();
             ManagedChannel channel = ManagedChannelBuilder.forTarget(server.get("ip").toString() + ":" + server.get("port").toString())
                                         .usePlaintext()
                                         .enableRetry()
@@ -55,6 +49,7 @@ public abstract class KVService {
     }
 
     public abstract void put(int key, int value);
+    public abstract int get(int key);
     public abstract void start();
 
     public abstract ServiceType getType();

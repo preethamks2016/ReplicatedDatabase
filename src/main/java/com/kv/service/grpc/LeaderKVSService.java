@@ -170,6 +170,11 @@ public class LeaderKVSService extends KVService {
         return;
     }
 
+    @Override
+    public int get(int key) {
+        return this.kvStore.get(key);
+    }
+
     private Kvservice.APERequest populateAPERequest(Log prevLog, Log currentLog) {
 
         List<Kvservice.Entry> entries = new ArrayList<>();
