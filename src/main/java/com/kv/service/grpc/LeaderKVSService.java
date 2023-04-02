@@ -156,7 +156,7 @@ public class LeaderKVSService extends KVService {
                 }
             }
             synchronized (this) {
-                for(int index = commitIndex + 1; index < currentLogIndex; index++){
+                for(int index = commitIndex + 1; index <= currentLogIndex; index++){
                     Optional<Log> log = logStore.ReadAtIndex(index);
                     kvStore.put(log.get().getKey(), log.get().getValue());
                 }
