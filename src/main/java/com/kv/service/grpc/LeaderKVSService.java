@@ -128,19 +128,12 @@ public class LeaderKVSService extends KVService {
                     }
 
                     Kvservice.APEResponse response = appendEntries(clients.get(clientIdx), prevLog, currentLog);
-
                     // notify future put requests
                     Object currentSyncObject = syncObjects.get(clientIdx).get(currentLogIndex);
                     synchronized (currentSyncObject) {
                         syncObjects.get(clientIdx).remove(currentLogIndex);
                         currentSyncObject.notify();
                     }
-                    synchronized (this) {
-                        //add it to key store
-                        kvStore.put(key, value);
-                        commitIndex = currentLogIndex;
-                    }
-
                     return response;
                 });
             }
@@ -161,6 +154,13 @@ public class LeaderKVSService extends KVService {
                 } catch (ExecutionException e) {
                     // handle exception from server
                 }
+            }
+            synchronized (this) {
+                for(int index = commitIndex + 1; index < currentLogIndex; index++){
+                    Optional<Log> log = logStore.ReadAtIndex(index);
+                    kvStore.put(log.get().getKey(), log.get().getValue());
+                }
+                commitIndex = currentLogIndex;
             }
 
         } catch (IOException e) {
