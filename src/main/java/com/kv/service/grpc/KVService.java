@@ -1,6 +1,5 @@
 package com.kv.service.grpc;
 
-import com.kv.service.grpc.exception.HeartBeatMissedException;
 import com.kv.store.KVStore;
 import com.kv.store.LogStore;
 import com.kvs.Kvservice;
