@@ -113,6 +113,13 @@ public class KVSServer {
             responseObserver.onCompleted();
         }
 
+        public void requestVoteRPC(Kvservice.RVRequest req, StreamObserver<Kvservice.RVResponse> responseObserver) {
+            logger.info("Got request from client: " + req);
+            Kvservice.RVResponse reply  = kvService.requestVotes(req);
+            responseObserver.onNext(reply);
+            responseObserver.onCompleted();
+        }
+
 
     }
 

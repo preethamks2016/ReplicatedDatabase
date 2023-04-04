@@ -2,6 +2,7 @@ package com.kv.service.grpc;
 
 import com.kv.store.KVStore;
 import com.kv.store.LogStore;
+import com.kvs.Kvservice;
 
 import java.util.List;
 import java.util.Map;
@@ -37,6 +38,11 @@ public class CandidateKVSService extends KVService{
 
     public com.kvs.Kvservice.APEResponse appendEntries(com.kvs.Kvservice.APERequest req) {
         // todo:
+        return null;
+    }
+
+    @Override
+    public Kvservice.RVResponse requestVotes(Kvservice.RVRequest req) {
         return null;
     }
 

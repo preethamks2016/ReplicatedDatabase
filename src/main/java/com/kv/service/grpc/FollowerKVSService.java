@@ -129,4 +129,9 @@ public class FollowerKVSService extends KVService {
             return APEResponse.newBuilder().setSuccess(false).build();
         }
     }
+
+    @Override
+    public Kvservice.RVResponse requestVotes(Kvservice.RVRequest req) {
+        return null;
+    }
 }

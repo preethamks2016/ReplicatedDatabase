@@ -235,4 +235,9 @@ public class LeaderKVSService extends KVService {
         //todo: throw exception
         return null;
     }
+
+    @Override
+    public Kvservice.RVResponse requestVotes(Kvservice.RVRequest req) {
+        return null;
+    }
 }

@@ -62,4 +62,5 @@ public abstract class KVService {
     public abstract ServiceType getType();
 
     public abstract Kvservice.APEResponse appendEntries(Kvservice.APERequest req);
+    public abstract Kvservice.RVResponse requestVotes(Kvservice.RVRequest req);
 }
