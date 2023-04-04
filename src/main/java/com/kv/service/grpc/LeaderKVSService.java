@@ -65,7 +65,7 @@ public class LeaderKVSService extends KVService {
                 .setPrevLogIndex(prevLog == null ? -1 : prevLog.getIndex())
                 .setPrevLogTerm(prevLog == null ? -1 : prevLog.getTerm())
                 .addAllEntry(entries)
-                .setLeaderCommitIdx(commitIndex)
+                .setLeaderCommitIdx(logStore.getCommitIndex())
                 .build();
         return newRequest;
     }
@@ -155,11 +155,11 @@ public class LeaderKVSService extends KVService {
                 }
             }
             synchronized (this) {
-                for(int index = commitIndex + 1; index <= currentLogIndex; index++){
+                for(int index = logStore.getCommitIndex() + 1; index <= currentLogIndex; index++){
                     Optional<Log> log = logStore.ReadAtIndex(index);
                     kvStore.put(log.get().getKey(), log.get().getValue());
                 }
-                commitIndex = currentLogIndex;
+                logStore.setCommitIndex(currentLogIndex);
             }
 
         } catch (IOException e) {
@@ -189,7 +189,7 @@ public class LeaderKVSService extends KVService {
                 .setPrevLogIndex(prevLog == null ? -1 : prevLog.getIndex())
                 .setPrevLogTerm(prevLog == null ? -1 : prevLog.getTerm())
                 .addAllEntry(entries)
-                .setLeaderCommitIdx(commitIndex)
+                .setLeaderCommitIdx(logStore.getCommitIndex())
                 .build();
         return request;
 

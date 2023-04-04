@@ -19,4 +19,8 @@ public interface LogStore {
     long getEOFOffset() throws IOException;
 
     void markEnding(int currentIndex) throws IOException;
+
+    int getCommitIndex();
+
+    void setCommitIndex(int commitIndex);
 }

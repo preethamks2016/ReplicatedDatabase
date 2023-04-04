@@ -18,14 +18,19 @@ public class LogStoreImpl implements LogStore {
 
     private Integer currentTerm = null;
 
+    private int commitIndex;
+
 
     public LogStoreImpl(String fileName, String metadataFileName) throws IOException {
         this.fileName = fileName;
         this.file = new RandomAccessFile(fileName, "rw");
         long offset = file.length();
         this.metadataFile = new RandomAccessFile(metadataFileName, "rw");
+        commitIndex = -1;
         lock = new ReentrantLock();
     }
+
+
 
     private void setInitialTerm() throws IOException {
         // setting initial term to 0
@@ -144,5 +149,15 @@ public class LogStoreImpl implements LogStore {
             offset += Log.SIZE;
             idx++;
         }
+    }
+
+    @Override
+    public int getCommitIndex() {
+        return commitIndex;
+    }
+
+    @Override
+    public void setCommitIndex(int commitIndex) {
+        this.commitIndex = commitIndex;
     }
 }

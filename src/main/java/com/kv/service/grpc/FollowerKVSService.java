@@ -34,12 +34,13 @@ public class FollowerKVSService extends KVService {
     @Override
     public ScheduledExecutorService start() {
         long threshhold = 7 * 1000;
+        int period = 6;
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
         executor.scheduleAtFixedRate(() -> {
             if(System.currentTimeMillis() - lastReceivedTS > threshhold) {
                 stop();
             }
-        }, 0, (int)(5 + (Math.random() * (7 - 5)))
+        }, (int)(5 + (Math.random() * (7 - 5))), period
                 , TimeUnit.SECONDS);
         scheduledExecutor = executor;
         return executor;
@@ -109,16 +110,16 @@ public class FollowerKVSService extends KVService {
             }
 
             // commit
-            if (req.getLeaderCommitIdx() > commitIndex) {
+            if (req.getLeaderCommitIdx() > logStore.getCommitIndex()) {
                 Optional<Log> lastLog = logStore.getLastLogEntry();
                 int lastEntryIndex = lastLog.map(Log::getIndex).orElse(-1);
                 int newCommitIndex = Math.min(req.getLeaderCommitIdx(), lastEntryIndex);
                 // apply to state machine
-                for (int i=commitIndex+1; i<= newCommitIndex; i++) {
+                for (int i=logStore.getCommitIndex()+1; i<= newCommitIndex; i++) {
                     Log log = logStore.ReadAtIndex(i).get();
                     kvStore.put(log.getKey(), log.getValue());
                 }
-                commitIndex = newCommitIndex;
+                logStore.setCommitIndex(newCommitIndex);
             }
 
             return APEResponse.newBuilder().setCurrentTerm(currentTerm).setSuccess(true).build();

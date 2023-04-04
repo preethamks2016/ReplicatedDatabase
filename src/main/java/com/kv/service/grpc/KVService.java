@@ -23,7 +23,7 @@ public abstract class KVService {
 
     protected KVStore kvStore;
 
-    protected int commitIndex = -1;
+
 
     protected ScheduledExecutorService scheduledExecutor;
 
