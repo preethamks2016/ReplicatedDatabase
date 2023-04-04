@@ -13,6 +13,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import com.kvs.KVServiceGrpc;
@@ -31,15 +32,6 @@ public class KVSServer {
         KVServiceFactory.instantiateClasses(serviceType, logStore, servers, kvStore);
         server = ServerBuilder.forPort(port).addService(new KVSImpl()).build().start();
 
-        // start
-        try {
-            KVServiceFactory.getInstance().start();
-        } catch (Exception e) {
-
-        }
-
-        logger.info("Server started, listening on " + port);
-
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
             public void run() {
@@ -51,6 +43,23 @@ public class KVSServer {
                 }
             }
         });
+
+        while (true) {
+            try {
+                ScheduledExecutorService scheduledExecutor = KVServiceFactory.getInstance().start();
+                //wait for the scheduled executor to end
+                scheduledExecutor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+                System.out.println("Executor is terminated");
+                System.out.println("changing from - " +serviceType + " to - " + KVServiceFactory.getInstance().newServiceType);
+                serviceType = KVServiceFactory.getInstance().newServiceType;
+                //instantiate new class
+                KVServiceFactory.instantiateClasses(serviceType, logStore, servers, kvStore);
+            } catch (Exception e) {
+
+            }
+        }
+
+
     }
 
     private void ReadAllServers(int selfPort) throws IOException {
@@ -137,4 +146,3 @@ public class KVSServer {
     }
 
 }
-

@@ -6,10 +6,8 @@ import com.kv.store.LogStore;
 import com.kvs.Kvservice;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -21,7 +19,6 @@ public class LeaderKVSService extends KVService {
     private List<ConcurrentHashMap<Integer, Object>> syncObjects;
 
     ReentrantLock lock;
-
     LeaderKVSService(LogStore logStore, List<Map<String, Object>> servers, KVStore kvStore) {
         super(logStore, servers, kvStore);
         lock = new ReentrantLock();
@@ -38,6 +35,8 @@ public class LeaderKVSService extends KVService {
         Kvservice.APEResponse response = client.appendEntries(request);
         while (!response.getSuccess()) {
             if(response.getCurrentTerm() > request.getLeaderTerm()) {
+                stop();
+                //todo:: should stop execution??
                 // follower term is greater than leader : fall back to follower state
             } else {
                 // try comparing prev index - 1
@@ -197,8 +196,31 @@ public class LeaderKVSService extends KVService {
     }
 
     @Override
-    public void start() {
+    public ScheduledExecutorService start() {
+        ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+        executor.scheduleAtFixedRate(() -> {
+            Kvservice.APERequest request = Kvservice.APERequest.newBuilder()
+                    .addAllEntry(null)
+                    .build();
+            //todo :: may be add all required details
+            CompletionService<Kvservice.APEResponse> completionService = new ExecutorCompletionService<>(executor);
+            for (KVSClient client : clients) {
+                completionService.submit(() -> {
+                    Kvservice.APEResponse response;
+                    response = client.appendEntries(request);
+                    return response;
+                });
+            }
+        }, 0, 5, TimeUnit.SECONDS);
+        scheduledExecutor = executor;
+        return executor;
+    }
 
+    @Override
+    public void stop() {
+        System.out.println("Stop called");
+        newServiceType = ServiceType.FOLLOWER;
+        scheduledExecutor.shutdownNow();
     }
 
     @Override
@@ -209,6 +231,7 @@ public class LeaderKVSService extends KVService {
     @Override
     public Kvservice.APEResponse appendEntries(Kvservice.APERequest req) {
         logger.error("Invalid call: Leader cannot receive append entries");
+
         //todo: throw exception
         return null;
     }

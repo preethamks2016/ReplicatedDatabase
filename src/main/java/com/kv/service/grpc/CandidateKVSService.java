@@ -5,6 +5,7 @@ import com.kv.store.LogStore;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
 
 public class CandidateKVSService extends KVService{
 
@@ -25,7 +26,12 @@ public class CandidateKVSService extends KVService{
     }
 
     @Override
-    public void start() {
+    public ScheduledExecutorService start() {
+        return null;
+    }
+
+    @Override
+    public void stop() {
 
     }
 

@@ -1,5 +1,6 @@
 package com.kv.service.grpc;
 
+import com.kv.service.grpc.exception.HeartBeatMissedException;
 import com.kv.store.KVStore;
 import com.kv.store.LogStore;
 import com.kvs.Kvservice;
@@ -12,6 +13,7 @@ import org.apache.log4j.Logger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
 
 public abstract class KVService {
 
@@ -23,6 +25,10 @@ public abstract class KVService {
     protected KVStore kvStore;
 
     protected int commitIndex = -1;
+
+    protected ScheduledExecutorService scheduledExecutor;
+
+    protected ServiceType newServiceType;
 
     public KVService (LogStore logStore, List<Map<String, Object>> servers, KVStore kvStore) {
 //        String serverAddress = "localhost:50051";
@@ -50,7 +56,9 @@ public abstract class KVService {
 
     public abstract void put(int key, int value);
     public abstract int get(int key);
-    public abstract void start();
+    public abstract ScheduledExecutorService start();
+
+    public abstract void stop();
 
     public abstract ServiceType getType();
 

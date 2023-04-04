@@ -1,5 +1,6 @@
 package com.kv.service.grpc;
 
+import com.kv.service.grpc.exception.HeartBeatMissedException;
 import com.kv.store.KVStore;
 import com.kv.store.Log;
 import com.kv.store.LogStore;
@@ -11,10 +12,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.*;
 
 public class FollowerKVSService extends KVService {
+
+    long lastReceivedTS;
     public FollowerKVSService(LogStore logStore, KVStore kvStore) {
         super(logStore, new ArrayList<Map<String, Object>>(), kvStore);
+        lastReceivedTS = System.currentTimeMillis();
     }
 
     @Override
@@ -28,8 +33,23 @@ public class FollowerKVSService extends KVService {
     }
 
     @Override
-    public void start() {
+    public ScheduledExecutorService start() {
+        long threshhold = 7 * 1000;
+        ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+        executor.scheduleAtFixedRate(() -> {
+            if(System.currentTimeMillis() - lastReceivedTS > threshhold) {
+                stop();
+            }
+        }, 0, (int)(5 + (Math.random() * (7 - 5)))
+                , TimeUnit.SECONDS);
+        scheduledExecutor = executor;
+        return executor;
+    }
 
+    @Override
+    public void stop() {
+        newServiceType = ServiceType.CANDIDATE;
+        scheduledExecutor.shutdownNow();
     }
 
     @Override
@@ -40,7 +60,14 @@ public class FollowerKVSService extends KVService {
     @Override
     public APEResponse appendEntries(APERequest req) {
         try {
-
+            synchronized(this) {
+                lastReceivedTS = System.currentTimeMillis();
+            }
+            if(req.getEntryList() == null) {
+                // Heart beat request
+                //todo :: may be commit entries and term?
+                return APEResponse.newBuilder().setSuccess(true).build();
+            }
             // Case 1: compare terms
             int currentTerm = logStore.getCurrentTerm();
             if (req.getLeaderTerm() < currentTerm) {
