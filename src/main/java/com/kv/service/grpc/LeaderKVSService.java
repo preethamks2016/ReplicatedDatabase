@@ -1,12 +1,12 @@
 package com.kv.service.grpc;
 
+import com.kv.service.grpc.exception.NoLongerLeaderException;
 import com.kv.store.KVStore;
 import com.kv.store.Log;
 import com.kv.store.LogStore;
 import com.kvs.Kvservice;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.ReentrantLock;
@@ -19,8 +19,8 @@ public class LeaderKVSService extends KVService {
     private List<ConcurrentHashMap<Integer, Object>> syncObjects;
 
     ReentrantLock lock;
-    LeaderKVSService(LogStore logStore, List<Map<String, Object>> servers, KVStore kvStore) {
-        super(logStore, servers, kvStore);
+    LeaderKVSService(LogStore logStore, List<Map<String, Object>> servers, KVStore kvStore, int port) {
+        super(logStore, servers, kvStore, port);
         lock = new ReentrantLock();
         executor = Executors.newFixedThreadPool(5);
         syncObjects = new ArrayList<ConcurrentHashMap<Integer, Object>>();
@@ -29,13 +29,14 @@ public class LeaderKVSService extends KVService {
         }
     }
 
-    public Kvservice.APEResponse appendEntries(KVSClient client, Log prevLog, Log currentLog) throws IOException {
+    public Kvservice.APEResponse appendEntries(KVSClient client, Log prevLog, Log currentLog) throws IOException, NoLongerLeaderException {
 
         Kvservice.APERequest request =  populateAPERequest(prevLog, currentLog);
         Kvservice.APEResponse response = client.appendEntries(request);
         while (!response.getSuccess()) {
             if(response.getCurrentTerm() > request.getLeaderTerm()) {
                 stop(ServiceType.FOLLOWER);
+                throw new NoLongerLeaderException();
                 //todo:: should stop execution??
                 // follower term is greater than leader : fall back to follower state
             } else {
@@ -104,8 +105,6 @@ public class LeaderKVSService extends KVService {
 
             lock.unlock();
 
-            Kvservice.APERequest request =  populateAPERequest(prevLog, currentLog);
-
             int currentLogIndex = currentLog.getIndex();
             CompletionService<Kvservice.APEResponse> completionService = new ExecutorCompletionService<>(executor);
             for (int i = 0; i < clients.size(); i++) {
@@ -125,8 +124,12 @@ public class LeaderKVSService extends KVService {
                             e.printStackTrace();
                         }
                     }
-
-                    Kvservice.APEResponse response = appendEntries(clients.get(clientIdx), prevLog, currentLog);
+                    Kvservice.APEResponse response = null;
+                    try {
+                         response = appendEntries(clients.get(clientIdx), prevLog, currentLog);
+                    } catch (NoLongerLeaderException e) {
+                        executor.shutdownNow();
+                    }
                     // notify future put requests
                     Object currentSyncObject = syncObjects.get(clientIdx).get(currentLogIndex);
                     synchronized (currentSyncObject) {
@@ -146,6 +149,8 @@ public class LeaderKVSService extends KVService {
                         ackCount++;
                     }
                     else {
+                        //this happens only when leaders term is less than followers
+                        return;
                         // todo: handle failure
                     }
                 } catch (InterruptedException e) {
@@ -217,9 +222,9 @@ public class LeaderKVSService extends KVService {
     }
 
     @Override
-    public void stop(ServiceType newType) {
+    public void stop(ServiceType serviceType) {
         System.out.println("Stop called");
-        newServiceType = newType;
+        newServiceType = serviceType;
         scheduledExecutor.shutdownNow();
     }
 

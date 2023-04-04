@@ -35,12 +35,15 @@ public abstract class KVService {
 
     protected ServiceType newServiceType;
 
-    public KVService (LogStore logStore, List<Map<String, Object>> servers, KVStore kvStore) {
+    protected int serverId;
+
+    public KVService (LogStore logStore, List<Map<String, Object>> servers, KVStore kvStore, int port) {
 //        String serverAddress = "localhost:50051";
 //        ManagedChannel channel = ManagedChannelBuilder.forTarget(serverAddress)
 //                .usePlaintext()
 //                .build();
 //        this.client = new KVSClient(channel);
+        serverId = port;
         clients = new ArrayList<KVSClient>();
         this.kvStore = kvStore;
         for (Map<String, Object> server : servers) {
@@ -63,7 +66,7 @@ public abstract class KVService {
     public abstract int get(int key);
     public abstract ScheduledExecutorService start();
 
-    public abstract void stop(ServiceType newType);
+    public abstract void stop(ServiceType serviceType);
 
     public abstract ServiceType getType();
 

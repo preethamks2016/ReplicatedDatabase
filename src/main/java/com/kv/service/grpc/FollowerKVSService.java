@@ -19,8 +19,8 @@ public class FollowerKVSService extends KVService {
 
     long lastReceivedTS;
 
-    public FollowerKVSService(LogStore logStore, KVStore kvStore) {
-        super(logStore, new ArrayList<Map<String, Object>>(), kvStore);
+    public FollowerKVSService(LogStore logStore, KVStore kvStore, int port) {
+        super(logStore, new ArrayList<Map<String, Object>>(), kvStore, port);
         lastReceivedTS = System.currentTimeMillis();
     }
 
@@ -51,8 +51,8 @@ public class FollowerKVSService extends KVService {
     }
 
     @Override
-    public void stop(ServiceType newType) {
-        newServiceType = newType;
+    public void stop(ServiceType serviceType) {
+        newServiceType = serviceType;
         scheduledExecutor.shutdownNow();
     }
 
