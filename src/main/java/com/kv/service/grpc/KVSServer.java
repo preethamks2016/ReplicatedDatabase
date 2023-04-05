@@ -8,6 +8,7 @@ import com.kvs.Kvservice;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import java.io.IOException;
 import java.io.File;
@@ -89,22 +90,32 @@ public class KVSServer {
             logger.info("Got request from client: " + req);
             kvService.put(req.getKey(), req.getValue());
 
-            Kvservice.PutResponse reply = Kvservice.PutResponse.newBuilder().setValue(
-                    req.getValue()
-            ).build();
-            responseObserver.onNext(reply);
-            responseObserver.onCompleted();
+            try {
+                Kvservice.PutResponse reply = Kvservice.PutResponse.newBuilder().setValue(
+                        req.getValue()
+                ).build();
+                responseObserver.onNext(reply);
+                responseObserver.onCompleted();
+            }
+            catch (StatusRuntimeException ex) {
+                responseObserver.onError(ex);
+            }
         }
 
         public void get(Kvservice.GetRequest req, StreamObserver<Kvservice.GetResponse> responseObserver) {
             logger.info("Got request from client: " + req);
             int response = kvService.get(req.getKey());
 
-            Kvservice.GetResponse reply = Kvservice.GetResponse.newBuilder().setValue(
-                    response
-            ).build();
-            responseObserver.onNext(reply);
-            responseObserver.onCompleted();
+            try {
+                Kvservice.GetResponse reply = Kvservice.GetResponse.newBuilder().setValue(
+                        response
+                ).build();
+                responseObserver.onNext(reply);
+                responseObserver.onCompleted();
+            }
+            catch (StatusRuntimeException ex) {
+                responseObserver.onError(ex);
+            }
         }
 
         public void appendEntriesRPC(Kvservice.APERequest req, StreamObserver<Kvservice.APEResponse> responseObserver) {
@@ -121,9 +132,14 @@ public class KVSServer {
 
         public void requestVoteRPC(Kvservice.RVRequest req, StreamObserver<Kvservice.RVResponse> responseObserver) {
             logger.info("Got request from client: " + req);
-            Kvservice.RVResponse reply  = kvService.requestVotes(req);
-            responseObserver.onNext(reply);
-            responseObserver.onCompleted();
+            try {
+                Kvservice.RVResponse reply = kvService.requestVotes(req);
+                responseObserver.onNext(reply);
+                responseObserver.onCompleted();
+            }
+            catch (Exception ex) {
+                responseObserver.onError(Status.FAILED_PRECONDITION.withDescription("Failed check").asRuntimeException());
+            }
         }
 
 
