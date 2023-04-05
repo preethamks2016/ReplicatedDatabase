@@ -35,7 +35,7 @@ public class LeaderKVSService extends KVService {
         Kvservice.APEResponse response = client.appendEntries(request);
         while (!response.getSuccess()) {
             if(response.getCurrentTerm() > request.getLeaderTerm()) {
-                stop();
+                stop(ServiceType.FOLLOWER);
                 //todo:: should stop execution??
                 // follower term is greater than leader : fall back to follower state
             } else {
@@ -217,9 +217,9 @@ public class LeaderKVSService extends KVService {
     }
 
     @Override
-    public void stop() {
+    public void stop(ServiceType newType) {
         System.out.println("Stop called");
-        newServiceType = ServiceType.FOLLOWER;
+        newServiceType = newType;
         scheduledExecutor.shutdownNow();
     }
 
@@ -230,14 +230,38 @@ public class LeaderKVSService extends KVService {
 
     @Override
     public Kvservice.APEResponse appendEntries(Kvservice.APERequest req) {
-        logger.error("Invalid call: Leader cannot receive append entries");
-
-        //todo: throw exception
-        return null;
+        try {
+            int currentTerm = logStore.getCurrentTerm();
+            if (req.getLeaderTerm() >= currentTerm) {
+                logger.error("Invalid call: Leader cannot receive append entries");
+                // update term
+                logStore.setTerm(req.getLeaderTerm());
+                stop(ServiceType.FOLLOWER); // return to follower state
+                throw new Exception("Make the RPC call fail");
+            }
+            else {
+                return Kvservice.APEResponse.newBuilder().setCurrentTerm(currentTerm).setSuccess(false).build();
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
     public Kvservice.RVResponse requestVotes(Kvservice.RVRequest req) {
-        return null;
+        try {
+            int currentTerm = logStore.getCurrentTerm();
+            if (req.getCandidateTerm() > currentTerm) {
+                // update term
+                logStore.setTerm(req.getCandidateTerm());
+                stop(ServiceType.CANDIDATE); // return to candidate state
+                throw new Exception("Make the RPC call fail");
+            }
+            else {
+                return Kvservice.RVResponse.newBuilder().setCurrentTerm(currentTerm).setVoteGranted(false).build();
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }

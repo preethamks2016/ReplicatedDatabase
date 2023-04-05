@@ -6,6 +6,8 @@ import com.kv.store.LogStore;
 import com.kvs.Kvservice;
 import com.kvs.Kvservice.APERequest;
 import com.kvs.Kvservice.APEResponse;
+import io.grpc.Metadata;
+import io.grpc.Status;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -16,6 +18,7 @@ import java.util.concurrent.*;
 public class FollowerKVSService extends KVService {
 
     long lastReceivedTS;
+
     public FollowerKVSService(LogStore logStore, KVStore kvStore) {
         super(logStore, new ArrayList<Map<String, Object>>(), kvStore);
         lastReceivedTS = System.currentTimeMillis();
@@ -23,11 +26,12 @@ public class FollowerKVSService extends KVService {
 
     @Override
     public void put(int key, int value) {
-
+        ThrowExceptionToRejectGetPut();
     }
 
     @Override
     public int get(int key) {
+        ThrowExceptionToRejectGetPut();
         return 0;
     }
 
@@ -37,18 +41,18 @@ public class FollowerKVSService extends KVService {
         int period = 6;
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
         executor.scheduleAtFixedRate(() -> {
-            if(System.currentTimeMillis() - lastReceivedTS > threshhold) {
-                stop();
-            }
-        }, (int)(5 + (Math.random() * (7 - 5))), period
+                    if (System.currentTimeMillis() - lastReceivedTS > threshhold) {
+                        stop(ServiceType.CANDIDATE);
+                    }
+                }, (int) (5 + (Math.random() * (7 - 5))), period
                 , TimeUnit.SECONDS);
         scheduledExecutor = executor;
         return executor;
     }
 
     @Override
-    public void stop() {
-        newServiceType = ServiceType.CANDIDATE;
+    public void stop(ServiceType newType) {
+        newServiceType = newType;
         scheduledExecutor.shutdownNow();
     }
 
@@ -60,10 +64,10 @@ public class FollowerKVSService extends KVService {
     @Override
     public APEResponse appendEntries(APERequest req) {
         try {
-            synchronized(this) {
+            synchronized (this) {
                 lastReceivedTS = System.currentTimeMillis();
             }
-            if(req.getEntryList() == null) {
+            if (req.getEntryList() == null) {
                 // Heart beat request
                 //todo :: may be commit entries and term?
                 return APEResponse.newBuilder().setSuccess(true).build();
@@ -115,7 +119,7 @@ public class FollowerKVSService extends KVService {
                 int lastEntryIndex = lastLog.map(Log::getIndex).orElse(-1);
                 int newCommitIndex = Math.min(req.getLeaderCommitIdx(), lastEntryIndex);
                 // apply to state machine
-                for (int i=logStore.getCommitIndex()+1; i<= newCommitIndex; i++) {
+                for (int i = logStore.getCommitIndex() + 1; i <= newCommitIndex; i++) {
                     Log log = logStore.ReadAtIndex(i).get();
                     kvStore.put(log.getKey(), log.getValue());
                 }

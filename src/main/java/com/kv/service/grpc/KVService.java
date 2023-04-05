@@ -5,10 +5,13 @@ import com.kv.store.LogStore;
 import com.kvs.Kvservice;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.Metadata;
+import io.grpc.Status;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
+import java.security.Provider;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -57,10 +60,18 @@ public abstract class KVService {
     public abstract int get(int key);
     public abstract ScheduledExecutorService start();
 
-    public abstract void stop();
+    public abstract void stop(ServiceType newType);
 
     public abstract ServiceType getType();
 
     public abstract Kvservice.APEResponse appendEntries(Kvservice.APERequest req);
     public abstract Kvservice.RVResponse requestVotes(Kvservice.RVRequest req);
+
+    public void ThrowExceptionToRejectGetPut() {
+        Status status = Status.UNAVAILABLE.withDescription("I am not the leader");
+        Metadata metadata = new Metadata();
+        metadata.put(Metadata.Key.of("ip", Metadata.ASCII_STRING_MARSHALLER), "SomeIP");
+        metadata.put(Metadata.Key.of("port", Metadata.ASCII_STRING_MARSHALLER), "SomePort");
+        throw status.asRuntimeException();
+    }
 }

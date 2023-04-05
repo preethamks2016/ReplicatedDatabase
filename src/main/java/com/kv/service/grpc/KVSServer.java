@@ -7,6 +7,7 @@ import com.kv.store.LogStoreImpl;
 import com.kvs.Kvservice;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
+import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import java.io.IOException;
 import java.io.File;
@@ -108,9 +109,14 @@ public class KVSServer {
 
         public void appendEntriesRPC(Kvservice.APERequest req, StreamObserver<Kvservice.APEResponse> responseObserver) {
             logger.info("Got request from client: index:" + (req.getPrevLogIndex()+1) + ", nEntries: " + req.getEntryList().size());
-            Kvservice.APEResponse reply  = kvService.appendEntries(req);
-            responseObserver.onNext(reply);
-            responseObserver.onCompleted();
+            try {
+                Kvservice.APEResponse reply = kvService.appendEntries(req);
+                responseObserver.onNext(reply);
+                responseObserver.onCompleted();
+            }
+            catch (Exception ex) {
+                responseObserver.onError(Status.FAILED_PRECONDITION.withDescription("Failed check").asRuntimeException());
+            }
         }
 
         public void requestVoteRPC(Kvservice.RVRequest req, StreamObserver<Kvservice.RVResponse> responseObserver) {
