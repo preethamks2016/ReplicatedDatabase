@@ -20,14 +20,36 @@ public class LogStoreImpl implements LogStore {
 
     private int commitIndex;
 
+    private final int votedForOffset = 1*Integer.BYTES;
+
 
     public LogStoreImpl(String fileName, String metadataFileName) throws IOException {
         this.fileName = fileName;
         this.file = new RandomAccessFile(fileName, "rw");
-        long offset = file.length();
         this.metadataFile = new RandomAccessFile(metadataFileName, "rw");
+        setInitialTerm();
+        resetVotedFor();
         commitIndex = -1;
         lock = new ReentrantLock();
+    }
+
+    @Override
+    public void resetVotedFor() throws IOException {
+        setVotedFor(-1);
+    }
+
+    @Override
+    public void setVotedFor(int votedFor) throws IOException {
+        metadataFile.seek(votedForOffset);
+        metadataFile.writeInt(votedFor);
+        metadataFile.getChannel().force(true);
+    }
+
+    @Override
+    public Optional<Integer> getVotedFor() throws IOException {
+        metadataFile.seek(votedForOffset);
+        int votedFor = metadataFile.readInt();
+        return (votedFor != -1) ? Optional.of(votedFor) : Optional.empty();
     }
 
 
@@ -43,20 +65,14 @@ public class LogStoreImpl implements LogStore {
         metadataFile.writeInt(newTerm);
         metadataFile.getChannel().force(true);
         currentTerm = newTerm;
+        resetVotedFor();
     }
     @Override
     public int getCurrentTerm() throws IOException {
-        if (currentTerm != null) return currentTerm; //in-memory
-
-        // read from metadata file
-        // if current term doesn't exist in file, initialise it to 0
-        synchronized (this) {
-            if (metadataFile.length() == 0) {
-                setInitialTerm();
-            } else {
-                metadataFile.seek(0);
-                currentTerm = metadataFile.readInt();
-            }
+        if (currentTerm != null) return currentTerm;
+        else {
+            metadataFile.seek(0);
+            currentTerm = metadataFile.readInt();
         }
         return currentTerm;
     }

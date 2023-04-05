@@ -9,6 +9,12 @@ public interface LogStore {
 
     int getCurrentTerm() throws IOException;
 
+    void resetVotedFor() throws IOException;
+
+    void setVotedFor(int votedFor) throws IOException;
+
+    Optional<Integer> getVotedFor() throws IOException;
+
     void WriteToIndex (Log log, int index) throws IOException;
     Optional<Log> getLastLogEntry() throws IOException;
 
