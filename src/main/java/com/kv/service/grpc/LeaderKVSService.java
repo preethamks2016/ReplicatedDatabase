@@ -202,6 +202,13 @@ public class LeaderKVSService extends KVService {
 
     @Override
     public ScheduledExecutorService start() {
+        try {
+            logger.info("I am now a leader ! Current term : " + logStore.getCurrentTerm());
+        }
+        catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
         executor.scheduleAtFixedRate(() -> {
             Kvservice.APERequest request = Kvservice.APERequest.newBuilder()

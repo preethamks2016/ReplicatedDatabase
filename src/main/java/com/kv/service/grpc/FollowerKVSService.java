@@ -37,6 +37,13 @@ public class FollowerKVSService extends KVService {
 
     @Override
     public ScheduledExecutorService start() {
+        try {
+            logger.info("I am a Follower ! My current term is : " + logStore.getCurrentTerm());
+        }
+        catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        
         long threshhold = 7 * 1000;
         int period = 6;
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);

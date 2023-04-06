@@ -37,15 +37,21 @@ public class CandidateKVSService extends KVService{
 
     @Override
     public ScheduledExecutorService start() {
+        try {
+            logger.info("I am now a candidate ! My last term was : " + logStore.getCurrentTerm());
+        }
+        catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
         ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(2);
         scheduled.schedule(() -> {
+            try {
+                logStore.setTerm(logStore.getCurrentTerm() + 1);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
             scheduled.schedule(()-> {
-                try {
-                    logStore.setTerm(logStore.getCurrentTerm() + 1);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-
                 stop(ServiceType.CANDIDATE);
             }, 7, TimeUnit.SECONDS);
             CompletionService<Kvservice.RVResponse> completionService = new ExecutorCompletionService<>(executor);
