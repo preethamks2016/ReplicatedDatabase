@@ -203,35 +203,33 @@ public class LeaderKVSService extends KVService {
     @Override
     public ScheduledExecutorService start() throws IOException{
 
-        logger.info("I am now a leader ! Current term : " + logStore.getCurrentTerm());
+        System.out.println("I am now a leader ! Current term : " + logStore.getCurrentTerm());
 
-        ScheduledExecutorService executorNew = Executors.newScheduledThreadPool(5);
-        executorNew.scheduleAtFixedRate(() -> {
-            Kvservice.APERequest request = null;
+        ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(5);
+        scheduledExecutorService.scheduleAtFixedRate(() -> {
             try {
-                request = Kvservice.APERequest.newBuilder()
+                Kvservice.APERequest request = Kvservice.APERequest.newBuilder()
                         .setLeaderTerm(logStore.getCurrentTerm())
-                        .addAllEntry(Collections.emptyList())
                         .build();
+            //todo :: may be add all required details
+
+            CompletionService<Kvservice.APEResponse> completionService = new ExecutorCompletionService<>(executor);
+
+                for (KVSClient client : clients) {
+                    System.out.println("Sending heartbeat to client!!!");
+                    completionService.submit(() -> {
+                        Kvservice.APEResponse response;
+                        response = client.appendEntries(request);
+                        return response;
+                    });
+                }
             } catch (IOException e) {
                 e.printStackTrace();
                 throw new RuntimeException(e);
             }
-
-            //todo :: may be add all required details
-            CompletionService<Kvservice.APEResponse> completionService = new ExecutorCompletionService<>(executorNew);
-            for (KVSClient client : clients) {
-                Kvservice.APERequest finalRequest = request;
-                completionService.submit(() -> {
-                    Kvservice.APEResponse response;
-                    System.out.println("Sending heartbeat to client !");
-                    response = client.appendEntries(finalRequest);
-                    return response;
-                });
-            }
         }, 0, 5, TimeUnit.SECONDS);
-        scheduledExecutor = executorNew;
-        return executorNew;
+        scheduledExecutor = scheduledExecutorService;
+        return scheduledExecutorService;
     }
 
     @Override
@@ -251,7 +249,7 @@ public class LeaderKVSService extends KVService {
         try {
             int currentTerm = logStore.getCurrentTerm();
             if (req.getLeaderTerm() >= currentTerm) {
-                logger.error("Invalid call: Leader cannot receive append entries");
+                System.out.println("Invalid call: Leader cannot receive append entries");
                 // update term
                 logStore.setTerm(req.getLeaderTerm());
                 stop(ServiceType.FOLLOWER); // return to follower state
@@ -272,7 +270,7 @@ public class LeaderKVSService extends KVService {
             if (req.getCandidateTerm() > currentTerm) {
                 // update term
                 logStore.setTerm(req.getCandidateTerm());
-                stop(ServiceType.CANDIDATE); // return to candidate state
+                stop(ServiceType.FOLLOWER); // return to follower state
                 throw new Exception("Make the RPC call fail");
             }
             else {

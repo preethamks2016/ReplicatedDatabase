@@ -25,7 +25,7 @@ public class KVSClient {
     public void put(int key, int value) {
 
         Kvservice.PutRequest request = Kvservice.PutRequest.newBuilder().setKey(key).setValue(value).build();
-        logger.info("Sending to server: " + request);
+        System.out.println("Sending to server: " + request);
         Kvservice.PutResponse response;
         try {
             response = blockingStub.put(request);
@@ -33,7 +33,7 @@ public class KVSClient {
             logger.log(Level.WARNING, "RPC failed: {0}", e.getStatus());
             return;
         }
-        logger.info("Got following from the server: " + response.getValue());
+        System.out.println("Got following from the server: " + response.getValue());
     }
 
     @SneakyThrows
@@ -74,7 +74,7 @@ public class KVSClient {
 
         while (true) {
             try {
-                logger.info("Sending to server: " + request);
+                System.out.println("Sending to server: " + request);
                 response = blockingStub.appendEntriesRPC(request);
                 break;
             } catch (StatusRuntimeException e) {
@@ -103,7 +103,7 @@ public class KVSClient {
                 .addAllEntry(entries)
                 .build();
 
-        logger.info("Sending to server: " + request);
+        System.out.println("Sending to server: " + request);
         Kvservice.APEResponse response = null;
         try {
             response = blockingStub.appendEntriesRPC(request);

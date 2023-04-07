@@ -38,7 +38,7 @@ public class FollowerKVSService extends KVService {
     @Override
     public ScheduledExecutorService start() {
         try {
-            logger.info("I am a Follower ! My current term is : " + logStore.getCurrentTerm());
+            System.out.println("I am a Follower ! My current term is : " + logStore.getCurrentTerm());
         }
         catch (Exception ex) {
             ex.printStackTrace();
@@ -74,15 +74,16 @@ public class FollowerKVSService extends KVService {
             synchronized (this) {
                 lastReceivedTS = System.currentTimeMillis();
             }
-            if (req.getEntryList().size() == 0) {
+            if (req.getEntryList() == null || req.getEntryList().size() == 0) {
                 // Heart beat request
                 //todo :: may be commit entries and term?
+                System.out.println("Received heart beat request");
                 return APEResponse.newBuilder().setSuccess(true).build();
             }
             // Case 1: compare terms
             int currentTerm = logStore.getCurrentTerm();
             if (req.getLeaderTerm() < currentTerm) {
-                logger.error("leader term less than current term of follower");
+                System.out.println("leader term less than current term of follower");
                 return APEResponse.newBuilder().setCurrentTerm(currentTerm).setSuccess(false).build();
             }
 
@@ -96,7 +97,7 @@ public class FollowerKVSService extends KVService {
             if (req.getPrevLogIndex() != -1) {
                 Optional<Log> prevLog = logStore.ReadAtIndex(req.getPrevLogIndex());
                 if (!(prevLog.isPresent() && req.getPrevLogTerm() == prevLog.get().getTerm() && req.getPrevLogIndex() == prevLog.get().getIndex())) {
-                    logger.error("previous log entry does not match");
+                    System.out.println("previous log entry does not match");
                     return APEResponse.newBuilder().setCurrentTerm(currentTerm).setSuccess(false).build();
                 }
             }
@@ -135,7 +136,7 @@ public class FollowerKVSService extends KVService {
 
             return APEResponse.newBuilder().setCurrentTerm(currentTerm).setSuccess(true).build();
         } catch (IOException ex) {
-            logger.error("IO error");
+            System.out.println("IO error");
             ex.printStackTrace();
             return APEResponse.newBuilder().setSuccess(false).build();
         }

@@ -48,7 +48,7 @@ public class KVSServer {
 
         while (true) {
             try {
-                logger.info("The Server is now starting !");
+                System.out.println("The Server is now starting !");
                 ScheduledExecutorService scheduledExecutor = KVServiceFactory.getInstance().start();
                 //wait for the scheduled executor to end
                 scheduledExecutor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
@@ -82,14 +82,10 @@ public class KVSServer {
 
     static class KVSImpl extends KVServiceGrpc.KVServiceImplBase {
 
-        KVService kvService;
-        public KVSImpl() {
-            this.kvService = KVServiceFactory.getInstance();
-        }
 
         public void put(Kvservice.PutRequest req, StreamObserver<Kvservice.PutResponse> responseObserver) {
-            logger.info("Got request from client: " + req);
-            kvService.put(req.getKey(), req.getValue());
+            System.out.println("Got request from client: " + req);
+            KVServiceFactory.getInstance().put(req.getKey(), req.getValue());
 
             try {
                 Kvservice.PutResponse reply = Kvservice.PutResponse.newBuilder().setValue(
@@ -104,8 +100,8 @@ public class KVSServer {
         }
 
         public void get(Kvservice.GetRequest req, StreamObserver<Kvservice.GetResponse> responseObserver) {
-            logger.info("Got request from client: " + req);
-            int response = kvService.get(req.getKey());
+            System.out.println("Got request from client: " + req);
+            int response = KVServiceFactory.getInstance().get(req.getKey());
 
             try {
                 Kvservice.GetResponse reply = Kvservice.GetResponse.newBuilder().setValue(
@@ -120,9 +116,9 @@ public class KVSServer {
         }
 
         public void appendEntriesRPC(Kvservice.APERequest req, StreamObserver<Kvservice.APEResponse> responseObserver) {
-            logger.info("Got request from client: index:" + (req.getPrevLogIndex()+1) + ", nEntries: " + req.getEntryList().size());
+            System.out.println("Got request from client: index:" + (req.getPrevLogIndex()+1) + ", nEntries: " + req.getEntryList().size());
             try {
-                Kvservice.APEResponse reply = kvService.appendEntries(req);
+                Kvservice.APEResponse reply = KVServiceFactory.getInstance().appendEntries(req);
                 responseObserver.onNext(reply);
                 responseObserver.onCompleted();
             }
@@ -132,9 +128,9 @@ public class KVSServer {
         }
 
         public void requestVoteRPC(Kvservice.RVRequest req, StreamObserver<Kvservice.RVResponse> responseObserver) {
-            logger.info("Got request from client: " + req);
+            System.out.println("Got request from client: " + req);
             try {
-                Kvservice.RVResponse reply = kvService.requestVotes(req);
+                Kvservice.RVResponse reply = KVServiceFactory.getInstance().requestVotes(req);
                 responseObserver.onNext(reply);
                 responseObserver.onCompleted();
             }

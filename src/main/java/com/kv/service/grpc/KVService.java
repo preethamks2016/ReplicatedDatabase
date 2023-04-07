@@ -118,7 +118,7 @@ public abstract class KVService {
                 }
             }
         } catch (IOException ex) {
-            logger.error("IO error");
+            System.out.println("IO error");
             throw new RuntimeException(ex);
         }
     }
