@@ -38,16 +38,19 @@ public class CandidateKVSService extends KVService{
     @Override
     public ScheduledExecutorService start() {
         try {
-            logger.info("I am now a candidate ! My last term was : " + logStore.getCurrentTerm());
-        }
-        catch (Exception ex) {
-            ex.printStackTrace();
+            logStore.setTerm(logStore.getCurrentTerm() + 1);
+            System.out.println(("I am now a candidate ! My current term is : " + logStore.getCurrentTerm()));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
 
         ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(2);
         scheduled.schedule(() -> {
             try {
-                logStore.setTerm(logStore.getCurrentTerm() + 1);
+                if (!logStore.getVotedFor().isPresent()) {
+                    System.out.println("Voting for myself for term : " + logStore.getCurrentTerm());
+                    logStore.setVotedFor(serverId);
+                }
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -94,7 +97,7 @@ public class CandidateKVSService extends KVService{
             // received votes change to leader
             stop(ServiceType.LEADER);
 
-        }, 5L, TimeUnit.SECONDS);
+        }, (long)Math.random()%5, TimeUnit.SECONDS);
         scheduledExecutor = scheduled;
 
         return scheduled;
@@ -132,11 +135,6 @@ public class CandidateKVSService extends KVService{
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-
-    @Override
-    public Kvservice.RVResponse requestVotes(Kvservice.RVRequest req) {
-        return null;
     }
 
     @Override

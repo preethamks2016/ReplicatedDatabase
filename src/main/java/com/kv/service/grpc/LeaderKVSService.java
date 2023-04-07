@@ -209,7 +209,7 @@ public class LeaderKVSService extends KVService {
             ex.printStackTrace();
         }
 
-        ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+        ScheduledExecutorService executor = Executors.newScheduledThreadPool(5);
         executor.scheduleAtFixedRate(() -> {
             Kvservice.APERequest request = Kvservice.APERequest.newBuilder()
                     .addAllEntry(null)
@@ -219,6 +219,7 @@ public class LeaderKVSService extends KVService {
             for (KVSClient client : clients) {
                 completionService.submit(() -> {
                     Kvservice.APEResponse response;
+                    System.out.println("Sending heartbeat to client !");
                     response = client.appendEntries(request);
                     return response;
                 });

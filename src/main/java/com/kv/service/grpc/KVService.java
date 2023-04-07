@@ -84,8 +84,10 @@ public abstract class KVService {
         try {
             int currentTerm = logStore.getCurrentTerm();
             if (req.getCandidateTerm() < currentTerm) {
+                System.out.println("Voted false. Current term is greater than candidate term.");
                 return Kvservice.RVResponse.newBuilder().setVoteGranted(false).setCurrentTerm(currentTerm).build();
             } else if (req.getCandidateTerm() > currentTerm) {
+                System.out.println("Voted true. Got greater term in request than current term " + currentTerm);
                 logStore.setTerm(req.getCandidateTerm());
                 logStore.setVotedFor(req.getCandidateId());
                 currentTerm = logStore.getCurrentTerm();
@@ -96,17 +98,21 @@ public abstract class KVService {
                 Optional<Integer> votedFor = logStore.getVotedFor();
                 if (votedFor.isPresent()) {
                     // already voted
+                    System.out.println("Did not vote. Already voted for term " + currentTerm);
                     return Kvservice.RVResponse.newBuilder().setVoteGranted(false).setCurrentTerm(currentTerm).build();
                 } else {
                     // vote
                     Optional<Log> logOptional = logStore.getLastLogEntry();
                     if (!logOptional.isPresent()) {
+                        System.out.println("Case1: Vote granted for term " + currentTerm);
                         logStore.setVotedFor(req.getCandidateId());
                         return Kvservice.RVResponse.newBuilder().setVoteGranted(true).setCurrentTerm(currentTerm).build();
                     } else if (logOptional.get().getTerm() <= req.getLastLogTerm() && logOptional.get().getIndex() <= req.getLastLogIndex()) {
                         logStore.setVotedFor(req.getCandidateId());
+                        System.out.println("Vote granted for term " + currentTerm);
                         return Kvservice.RVResponse.newBuilder().setVoteGranted(true).setCurrentTerm(currentTerm).build();
                     } else {
+                        System.out.println("Voted false. My log is more up to date. ");
                         return Kvservice.RVResponse.newBuilder().setVoteGranted(false).setCurrentTerm(currentTerm).build();
                     }
                 }

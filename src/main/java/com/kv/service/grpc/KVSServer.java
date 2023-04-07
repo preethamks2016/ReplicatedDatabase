@@ -48,6 +48,7 @@ public class KVSServer {
 
         while (true) {
             try {
+                logger.info("The Server is now starting !");
                 ScheduledExecutorService scheduledExecutor = KVServiceFactory.getInstance().start();
                 //wait for the scheduled executor to end
                 scheduledExecutor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);

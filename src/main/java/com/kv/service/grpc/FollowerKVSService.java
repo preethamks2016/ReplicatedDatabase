@@ -43,7 +43,7 @@ public class FollowerKVSService extends KVService {
         catch (Exception ex) {
             ex.printStackTrace();
         }
-        
+
         long threshhold = 7 * 1000;
         int period = 6;
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
@@ -143,6 +143,11 @@ public class FollowerKVSService extends KVService {
 
     @Override
     public Kvservice.RVResponse requestVotes(Kvservice.RVRequest req) {
-        return null;
+        Kvservice.RVResponse response = super.requestVotes(req);
+        if (response.getVoteGranted()) {
+            lastReceivedTS = System.currentTimeMillis();
+        }
+
+        return response;
     }
 }

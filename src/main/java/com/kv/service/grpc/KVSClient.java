@@ -41,7 +41,7 @@ public class KVSClient {
         Kvservice.RVResponse response = null;
         while (true) {
             try {
-                logger.info("Sending request vote: " + request);
+                System.out.println(("Sending request vote: " + request));
                 response = blockingStub.requestVoteRPC(request);
                 break;
             } catch (StatusRuntimeException e) {
