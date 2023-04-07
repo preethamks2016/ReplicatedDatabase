@@ -74,7 +74,7 @@ public class FollowerKVSService extends KVService {
             synchronized (this) {
                 lastReceivedTS = System.currentTimeMillis();
             }
-            if (req.getEntryList() == null) {
+            if (req.getEntryList().size() == 0) {
                 // Heart beat request
                 //todo :: may be commit entries and term?
                 return APEResponse.newBuilder().setSuccess(true).build();

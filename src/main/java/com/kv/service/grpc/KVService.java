@@ -64,7 +64,7 @@ public abstract class KVService {
 
     public abstract void put(int key, int value);
     public abstract int get(int key);
-    public abstract ScheduledExecutorService start();
+    public abstract ScheduledExecutorService start() throws IOException;
 
     public abstract void stop(ServiceType serviceType);
 

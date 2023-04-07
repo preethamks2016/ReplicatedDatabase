@@ -201,32 +201,37 @@ public class LeaderKVSService extends KVService {
     }
 
     @Override
-    public ScheduledExecutorService start() {
-        try {
-            logger.info("I am now a leader ! Current term : " + logStore.getCurrentTerm());
-        }
-        catch (Exception ex) {
-            ex.printStackTrace();
-        }
+    public ScheduledExecutorService start() throws IOException{
 
-        ScheduledExecutorService executor = Executors.newScheduledThreadPool(5);
-        executor.scheduleAtFixedRate(() -> {
-            Kvservice.APERequest request = Kvservice.APERequest.newBuilder()
-                    .addAllEntry(null)
-                    .build();
+        logger.info("I am now a leader ! Current term : " + logStore.getCurrentTerm());
+
+        ScheduledExecutorService executorNew = Executors.newScheduledThreadPool(5);
+        executorNew.scheduleAtFixedRate(() -> {
+            Kvservice.APERequest request = null;
+            try {
+                request = Kvservice.APERequest.newBuilder()
+                        .setLeaderTerm(logStore.getCurrentTerm())
+                        .addAllEntry(Collections.emptyList())
+                        .build();
+            } catch (IOException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+
             //todo :: may be add all required details
-            CompletionService<Kvservice.APEResponse> completionService = new ExecutorCompletionService<>(executor);
+            CompletionService<Kvservice.APEResponse> completionService = new ExecutorCompletionService<>(executorNew);
             for (KVSClient client : clients) {
+                Kvservice.APERequest finalRequest = request;
                 completionService.submit(() -> {
                     Kvservice.APEResponse response;
                     System.out.println("Sending heartbeat to client !");
-                    response = client.appendEntries(request);
+                    response = client.appendEntries(finalRequest);
                     return response;
                 });
             }
         }, 0, 5, TimeUnit.SECONDS);
-        scheduledExecutor = executor;
-        return executor;
+        scheduledExecutor = executorNew;
+        return executorNew;
     }
 
     @Override
