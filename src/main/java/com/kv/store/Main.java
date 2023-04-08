@@ -1,6 +1,7 @@
 package com.kv.store;
 
 import com.kv.service.grpc.KVSClient;
+import com.kvs.Kvservice;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 
@@ -12,23 +13,34 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class Main {
-    public static void main(String[] args) throws IOException, InterruptedException {
+    public static void main(String[] args) throws Exception {
         System.out.println("Hello world!");
         KVStore kvStore = new KVStoreImpl();
         kvStore.put(1, 5);
         kvStore.put(2, 3);
         kvStore.put(3, 7);
 
-        ManagedChannel channel = ManagedChannelBuilder.forTarget("127.0.0.1:5052")
+        ManagedChannel channel = ManagedChannelBuilder.forTarget("127.0.0.1:5051")
                 .usePlaintext()
                 .build();
         KVSClient client = new KVSClient(channel);
 
-        ExecutorService executor = Executors.newFixedThreadPool(2);
-        CompletionService<Boolean> completionService = new ExecutorCompletionService<>(executor);
-        for (int i = 0 ; i < 1; i++) {
-            client.put(i+1, i*2);
-        }
+        ExecutorService executor = Executors.newFixedThreadPool(5);
+        CompletionService<Kvservice.PutResponse> completionService = new ExecutorCompletionService<Kvservice.PutResponse>(executor);
+
+//        for (int i = 0; i < 10; i++) {
+//            int finalI = i;
+//            completionService.submit(() -> {
+//                Kvservice.PutResponse res =  null;
+//                client.put(1, finalI *2);
+//                System.out.println("Put request completed for i = " + finalI);
+//                return res;
+//            });
+//        }
+
+        //Thread.sleep(3000);
+
+        System.out.println("Got response: " + client.get(1));
 
 
 
@@ -42,7 +54,6 @@ public class Main {
         LogStore logStore3 = new LogStoreImpl("log5052.txt", "meta5052.txt");
         List<Log> logs;
 //
-        System.out.println(logStore3.ReadAtIndex(11).get().getKey());
 
         logs = logStore1.readAllLogs();
         for(Log log:logs) {

@@ -36,6 +36,19 @@ public class KVSClient {
         System.out.println("Got following from the server: " + response.getValue());
     }
 
+    public int get(int key) throws Exception {
+        Kvservice.GetRequest request = Kvservice.GetRequest.newBuilder().setKey(key).build();
+        System.out.println("Sending to server: " + request);
+        Kvservice.GetResponse response;
+        try {
+            response = blockingStub.get(request);
+            return response.getValue();
+        } catch (StatusRuntimeException e) {
+            logger.log(Level.WARNING, "RPC failed: {0}", e.getStatus());
+            throw new Exception("Key Not Found!");
+        }
+    }
+
     @SneakyThrows
     public Kvservice.RVResponse requestVote(Kvservice.RVRequest request) {
         Kvservice.RVResponse response = null;

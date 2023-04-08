@@ -91,11 +91,11 @@ public class LeaderKVSService extends KVService {
             // write to own log
             if (optionalLog.isPresent()) {
                 prevLog = optionalLog.get();
-                currentLog = new Log(prevLog.getIndex() + 1, prevLog.getTerm(), key, value);
+                currentLog = new Log(prevLog.getIndex() + 1, logStore.getCurrentTerm(), key, value);
                 logStore.WriteToIndex(currentLog, currentLog.getIndex());
             } else {
                 prevLog = null;
-                currentLog =  new Log(0, 0, key, value);
+                currentLog =  new Log(0, logStore.getCurrentTerm(), key, value);
                 logStore.WriteToIndex(currentLog, currentLog.getIndex());
             }
 

@@ -75,14 +75,15 @@ public class CandidateKVSService extends KVService{
             while (voteCount <= totalServers/2) {
                 try {
                     Future<Kvservice.RVResponse> completedTask = completionService.take();
-                    if (completedTask.get().getVoteGranted()) {
-                        voteCount++;
-                    } else {
-                        if(completedTask.get().getCurrentTerm() > logStore.getCurrentTerm()) {
-                            // follower term is greater than the candidate
-                            logStore.setTerm(completedTask.get().getCurrentTerm());
-
-                            stop(ServiceType.CANDIDATE);
+                    if(completedTask.get() != null) {
+                        if (completedTask.get().getVoteGranted()) {
+                            voteCount++;
+                        } else {
+                            if (completedTask.get().getCurrentTerm() > logStore.getCurrentTerm()) {
+                                // follower term is greater than the candidate
+                                logStore.setTerm(completedTask.get().getCurrentTerm());
+                                stop(ServiceType.CANDIDATE);
+                            }
                         }
                     }
                 } catch (InterruptedException e) {
