@@ -210,6 +210,7 @@ public class LeaderKVSService extends KVService {
             try {
                 Kvservice.APERequest request = Kvservice.APERequest.newBuilder()
                         .setLeaderTerm(logStore.getCurrentTerm())
+                        .setLeaderCommitIdx(logStore.getCommitIndex())
                         .build();
             //todo :: may be add all required details
 

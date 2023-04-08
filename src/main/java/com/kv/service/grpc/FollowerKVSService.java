@@ -74,17 +74,19 @@ public class FollowerKVSService extends KVService {
             synchronized (this) {
                 lastReceivedTS = System.currentTimeMillis();
             }
-            if (req.getEntryList() == null || req.getEntryList().size() == 0) {
-                // Heart beat request
-                //todo :: may be commit entries and term?
-                System.out.println("Received heart beat request");
-                return APEResponse.newBuilder().setSuccess(true).build();
-            }
+
             // Case 1: compare terms
             int currentTerm = logStore.getCurrentTerm();
             if (req.getLeaderTerm() < currentTerm) {
                 System.out.println("leader term less than current term of follower");
                 return APEResponse.newBuilder().setCurrentTerm(currentTerm).setSuccess(false).build();
+            }
+
+            if (req.getEntryList() == null || req.getEntryList().size() == 0) {
+                // Heart beat request
+                commitEntries(req);
+                System.out.println("Received heart beat request");
+                return APEResponse.newBuilder().setSuccess(true).build();
             }
 
             // update currentTerm to latest term seen from leader
@@ -121,24 +123,28 @@ public class FollowerKVSService extends KVService {
                 currentIndex++;
             }
 
-            // commit
-            if (req.getLeaderCommitIdx() > logStore.getCommitIndex()) {
-                Optional<Log> lastLog = logStore.getLastLogEntry();
-                int lastEntryIndex = lastLog.map(Log::getIndex).orElse(-1);
-                int newCommitIndex = Math.min(req.getLeaderCommitIdx(), lastEntryIndex);
-                // apply to state machine
-                for (int i = logStore.getCommitIndex() + 1; i <= newCommitIndex; i++) {
-                    Log log = logStore.ReadAtIndex(i).get();
-                    kvStore.put(log.getKey(), log.getValue());
-                }
-                logStore.setCommitIndex(newCommitIndex);
-            }
+            // commit entries
+            commitEntries(req);
 
             return APEResponse.newBuilder().setCurrentTerm(currentTerm).setSuccess(true).build();
         } catch (IOException ex) {
             System.out.println("IO error");
             ex.printStackTrace();
             return APEResponse.newBuilder().setSuccess(false).build();
+        }
+    }
+
+    private void commitEntries(APERequest req) throws IOException {
+        if (req.getLeaderCommitIdx() > logStore.getCommitIndex()) {
+            Optional<Log> lastLog = logStore.getLastLogEntry();
+            int lastEntryIndex = lastLog.map(Log::getIndex).orElse(-1);
+            int newCommitIndex = Math.min(req.getLeaderCommitIdx(), lastEntryIndex);
+            // apply to state machine
+            for (int i = logStore.getCommitIndex() + 1; i <= newCommitIndex; i++) {
+                Log log = logStore.ReadAtIndex(i).get();
+                kvStore.put(log.getKey(), log.getValue());
+            }
+            logStore.setCommitIndex(newCommitIndex);
         }
     }
 
