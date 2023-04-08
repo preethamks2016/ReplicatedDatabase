@@ -39,20 +39,16 @@ public class KVSClient {
     @SneakyThrows
     public Kvservice.RVResponse requestVote(Kvservice.RVRequest request) {
         Kvservice.RVResponse response = null;
-        while (true) {
-            try {
-                System.out.println(("Sending request vote: " + request));
-                response = blockingStub.requestVoteRPC(request);
-                break;
-            } catch (StatusRuntimeException e) {
-                logger.log(Level.WARNING, "RPC failed: {0}", e.getStatus());
-                Thread.sleep(1000);
-            }
+        try {
+            System.out.println(("Sending request vote: " + request));
+            response = blockingStub.requestVoteRPC(request);
+        } catch (StatusRuntimeException e) {
+            logger.log(Level.WARNING, "RPC failed: {0}", e.getStatus());
         }
-
 
         return response;
     }
+
     @SneakyThrows
     public Kvservice.APEResponse appendEntries(Kvservice.APERequest request) {
 //        Kvservice.Entry entry = Kvservice.Entry.newBuilder()
@@ -78,6 +74,7 @@ public class KVSClient {
                 response = blockingStub.appendEntriesRPC(request);
                 break;
             } catch (StatusRuntimeException e) {
+                if (request.getEntryList().size() == 0) break;
                 logger.log(Level.WARNING, "RPC failed: {0}", e.getStatus());
                 Thread.sleep(1000);
             }
