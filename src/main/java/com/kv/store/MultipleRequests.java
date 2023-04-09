@@ -86,7 +86,9 @@ public class MultipleRequests {
 //
 
         ExecutorService executor = Executors.newFixedThreadPool(5);
-        ManagedChannel channel = ManagedChannelBuilder.forTarget("ms0708.utah.cloudlab.us:5050")
+        String serverIp = args[1];
+        String port = args[2];
+        ManagedChannel channel = ManagedChannelBuilder.forTarget(serverIp + ":" + port)
                 .usePlaintext()
                 .build();
         KVSClient client = new KVSClient(channel);
