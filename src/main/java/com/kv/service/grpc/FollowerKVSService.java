@@ -18,10 +18,12 @@ import java.util.concurrent.*;
 public class FollowerKVSService extends KVService {
 
     long lastReceivedTS;
+    private Object lockObject;
 
     public FollowerKVSService(LogStore logStore, KVStore kvStore, int port) {
         super(logStore, new ArrayList<Map<String, Object>>(), kvStore, port);
         lastReceivedTS = System.currentTimeMillis();
+        lockObject = new Object();
     }
 
     @Override
@@ -84,7 +86,10 @@ public class FollowerKVSService extends KVService {
 
             if (req.getEntryList() == null || req.getEntryList().size() == 0) {
                 // Heart beat request
-                commitEntries(req);
+
+                synchronized (lockObject) {
+                    commitEntries(req);
+                }
                 System.out.println("Received heart beat request");
                 leaderId = req.getLeaderId();
                 return APEResponse.newBuilder().setSuccess(true).build();
@@ -125,7 +130,9 @@ public class FollowerKVSService extends KVService {
             }
 
             // commit entries
-            commitEntries(req);
+            synchronized (lockObject) {
+                commitEntries(req);
+            }
 
             return APEResponse.newBuilder().setCurrentTerm(currentTerm).setSuccess(true).build();
         } catch (IOException ex) {
