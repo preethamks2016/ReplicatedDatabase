@@ -46,7 +46,7 @@ public class FollowerKVSService extends KVService {
             ex.printStackTrace();
         }
 
-        long threshhold = 7 * 1000;
+        long threshhold = 10 * 1000;
         int period = 6;
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
         executor.scheduleAtFixedRate(() -> {

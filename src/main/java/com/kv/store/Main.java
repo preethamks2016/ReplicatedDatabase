@@ -67,7 +67,9 @@ public class Main {
                 client = portToClient.get(Integer.toString(ex.leaderPort));
             }
             catch (StatusRuntimeException ex) {
-                String p = allServers.get((int)Math.random()%allServers.size()).get("port").toString();
+                int max = allServers.size()-1, min = 0;
+                int random_int = (int)Math.floor(Math.random() * (max - min + 1) + min);
+                String p = allServers.get(random_int).get("port").toString();
                 System.out.println("Server unavailable ! trying another port " + p);
                 client = portToClient.get(p);
             }
