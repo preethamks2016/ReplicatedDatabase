@@ -37,44 +37,44 @@ public class Main {
 
         KVSClient client = portToClient.get("5050");
 
-//        Scanner scanner = new Scanner(System.in);
-//        while (true) {
-//            System.out.print("> ");
-//            String input = scanner.nextLine();
-//            input = input.trim();
-//            try {
-//                if (input.startsWith("get")) {
-//                    String key = input.substring(4).trim();
-//                    int response = client.get(Integer.parseInt(key));
-//                    System.out.println("Value: " + response);
-//                } else if (input.startsWith("put")) {
-//                    String[] parts = input.split(" ");
-//                    if (parts.length < 3) {
-//                        System.out.println("Invalid command");
-//                    } else {
-//                        int key = Integer.parseInt(parts[1]);
-//                        int value = Integer.parseInt(parts[2]);
-//                        client.put(key, value);
-//                    }
-//                } else if (input.length() == 0) {
-//                    continue;
-//                } else {
-//                    System.out.println("Invalid command");
-//                }
-//            }
-//            catch (NoLongerLeaderException ex) {
-//                System.out.println("Changing to new leader with port: " + ex.leaderPort);
-//                client = portToClient.get(Integer.toString(ex.leaderPort));
-//            }
-//            catch (StatusRuntimeException ex) {
-//                String p = allServers.get((int)Math.random()%allServers.size()).get("port").toString();
-//                System.out.println("Server unavailable ! trying another port " + p);
-//                client = portToClient.get(p);
-//            }
-//            catch (Exception e) {
-//                e.printStackTrace();
-//            }
-//        }
+        Scanner scanner = new Scanner(System.in);
+        while (true) {
+            System.out.print("> ");
+            String input = scanner.nextLine();
+            input = input.trim();
+            try {
+                if (input.startsWith("get")) {
+                    String key = input.substring(4).trim();
+                    int response = client.get(Integer.parseInt(key));
+                    System.out.println("Value: " + response);
+                } else if (input.startsWith("put")) {
+                    String[] parts = input.split(" ");
+                    if (parts.length < 3) {
+                        System.out.println("Invalid command");
+                    } else {
+                        int key = Integer.parseInt(parts[1]);
+                        int value = Integer.parseInt(parts[2]);
+                        client.put(key, value);
+                    }
+                } else if (input.length() == 0) {
+                    continue;
+                } else {
+                    System.out.println("Invalid command");
+                }
+            }
+            catch (NoLongerLeaderException ex) {
+                System.out.println("Changing to new leader with port: " + ex.leaderPort);
+                client = portToClient.get(Integer.toString(ex.leaderPort));
+            }
+            catch (StatusRuntimeException ex) {
+                String p = allServers.get((int)Math.random()%allServers.size()).get("port").toString();
+                System.out.println("Server unavailable ! trying another port " + p);
+                client = portToClient.get(p);
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
 
 
 
@@ -85,22 +85,22 @@ public class Main {
 //        kvStore.put(3, 7);
 //
 
-        ExecutorService executor = Executors.newFixedThreadPool(5);
-        CompletionService<Kvservice.PutResponse> completionService = new ExecutorCompletionService<Kvservice.PutResponse>(executor);
-
-        for (int i = 0; i < 100; i++) {
-            int finalI = i;
-            completionService.submit(() -> {
-                Kvservice.PutResponse res =  null;
-                client.put(1, finalI *2);
-                System.out.println("Put request completed for i = " + finalI);
-                return res;
-            });
-        }
+//        ExecutorService executor = Executors.newFixedThreadPool(5);
+//        CompletionService<Kvservice.PutResponse> completionService = new ExecutorCompletionService<Kvservice.PutResponse>(executor);
 //
-        Thread.sleep(3000);
-
-        System.out.println("Got response: " + client.get(1));
+//        for (int i = 0; i < 100; i++) {
+//            int finalI = i;
+//            completionService.submit(() -> {
+//                Kvservice.PutResponse res =  null;
+//                client.put(1, finalI *2);
+//                System.out.println("Put request completed for i = " + finalI);
+//                return res;
+//            });
+//        }
+////
+//        Thread.sleep(3000);
+//
+//        System.out.println("Got response: " + client.get(1));
 
 
 
