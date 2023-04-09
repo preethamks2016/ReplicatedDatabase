@@ -81,10 +81,10 @@ public class LogStoreImpl implements LogStore {
 
     @Override
     public void WriteToIndex(Log log, int index) throws IOException {
-        finalLog = null;
+        //finalLog = null;
         long newOffset = (long) index * Log.SIZE;
-        if (newOffset != file.getFilePointer()) file.seek(newOffset);
-        if (newOffset == file.length()) finalLog = log;
+        file.seek(newOffset);
+        //if (newOffset == file.length()) finalLog = log;
         file.write(log.toBytes());
         file.getChannel().force(true);
     }
@@ -95,7 +95,7 @@ public class LogStoreImpl implements LogStore {
         if (offset == 0)
             return Optional.empty();
         else {
-            if (finalLog != null) return Optional.of(finalLog);
+            //if (finalLog != null) return Optional.of(finalLog);
             offset -= Log.SIZE;
             file.seek(offset);
             byte[] buffer = new byte[Log.SIZE];
