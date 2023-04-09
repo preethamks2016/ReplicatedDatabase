@@ -37,6 +37,7 @@ message APERequest {
   int32 prevLogTerm = 3;
   repeated Entry entry = 4;
   int32 leaderCommitIdx = 5;
+  int32 leaderId = 6;
 }
 
 
