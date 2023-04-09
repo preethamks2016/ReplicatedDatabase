@@ -41,7 +41,7 @@ public class Main {
         while (true) {
             System.out.print("> ");
             String input = scanner.nextLine();
-
+            input = input.trim();
             try {
                 if (input.startsWith("get")) {
                     String key = input.substring(4).trim();
@@ -56,6 +56,8 @@ public class Main {
                         int value = Integer.parseInt(parts[2]);
                         client.put(key, value);
                     }
+                } else if (input.length() == 0) {
+                    continue;
                 } else {
                     System.out.println("Invalid command");
                 }
