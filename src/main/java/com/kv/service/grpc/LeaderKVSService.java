@@ -24,7 +24,7 @@ public class LeaderKVSService extends KVService {
     LeaderKVSService(LogStore logStore, List<Map<String, Object>> servers, KVStore kvStore, int port) {
         super(logStore, servers, kvStore, port);
         lock = new ReentrantLock();
-        executor = Executors.newFixedThreadPool(5);
+        executor = Executors.newFixedThreadPool(16);
         syncObjects = new ArrayList<ConcurrentHashMap<Integer, Object>>();
         for (int i = 0; i < clients.size(); i++) {
             syncObjects.add(new ConcurrentHashMap<Integer, Object>());
