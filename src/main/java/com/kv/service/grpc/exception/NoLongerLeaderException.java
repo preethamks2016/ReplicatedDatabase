@@ -1,8 +1,10 @@
 package com.kv.service.grpc.exception;
 
 public class NoLongerLeaderException extends Exception {
-    public NoLongerLeaderException() {
+    public int leaderPort = -1;
+    public NoLongerLeaderException(int newPort) {
         super();
+        leaderPort = newPort;
     }
 
 

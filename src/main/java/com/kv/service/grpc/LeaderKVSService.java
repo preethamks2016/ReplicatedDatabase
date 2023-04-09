@@ -5,6 +5,7 @@ import com.kv.store.KVStore;
 import com.kv.store.Log;
 import com.kv.store.LogStore;
 import com.kvs.Kvservice;
+import io.grpc.Metadata;
 
 import java.io.IOException;
 import java.util.*;
@@ -17,6 +18,7 @@ public class LeaderKVSService extends KVService {
 
     // For every client maintain sync objects for every log index
     private List<ConcurrentHashMap<Integer, Object>> syncObjects;
+    private Map<String, String> portToIP;
 
     ReentrantLock lock;
     LeaderKVSService(LogStore logStore, List<Map<String, Object>> servers, KVStore kvStore, int port) {
@@ -27,6 +29,11 @@ public class LeaderKVSService extends KVService {
         for (int i = 0; i < clients.size(); i++) {
             syncObjects.add(new ConcurrentHashMap<Integer, Object>());
         }
+
+        portToIP = new HashMap<String, String>();
+        for (Map<String, Object> server : servers) {
+            portToIP.put(server.get("port").toString(), server.get("ip").toString());
+        }
     }
 
     public Kvservice.APEResponse appendEntries(KVSClient client, Log prevLog, Log currentLog) throws IOException, NoLongerLeaderException {
@@ -36,7 +43,7 @@ public class LeaderKVSService extends KVService {
         while (!response.getSuccess()) {
             if(response.getCurrentTerm() > request.getLeaderTerm()) {
                 stop(ServiceType.FOLLOWER);
-                throw new NoLongerLeaderException();
+                throw new NoLongerLeaderException(0);
                 //todo:: should stop execution??
                 // follower term is greater than leader : fall back to follower state
             } else {
@@ -211,7 +218,9 @@ public class LeaderKVSService extends KVService {
                 Kvservice.APERequest request = Kvservice.APERequest.newBuilder()
                         .setLeaderTerm(logStore.getCurrentTerm())
                         .setLeaderCommitIdx(logStore.getCommitIndex())
+                        .setLeaderId(serverId)
                         .build();
+
             //todo :: may be add all required details
 
             CompletionService<Kvservice.APEResponse> completionService = new ExecutorCompletionService<>(executor);

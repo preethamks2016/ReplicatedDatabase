@@ -127,6 +127,7 @@ public class CandidateKVSService extends KVService{
             if (req.getLeaderTerm() >= currentTerm) {
                 // update term
                 logStore.setTerm(req.getLeaderTerm());
+                if (req.getEntryList() == null || req.getEntryList().size() == 0) leaderId = req.getLeaderId();
                 stop(ServiceType.FOLLOWER); // return to follower state
                 throw new Exception("Make the RPC call fail");
             }

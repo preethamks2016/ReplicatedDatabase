@@ -37,6 +37,8 @@ public abstract class KVService {
 
     protected int serverId;
 
+    protected int leaderId;
+
     public KVService (LogStore logStore, List<Map<String, Object>> servers, KVStore kvStore, int port) {
 //        String serverAddress = "localhost:50051";
 //        ManagedChannel channel = ManagedChannelBuilder.forTarget(serverAddress)
@@ -44,6 +46,7 @@ public abstract class KVService {
 //                .build();
 //        this.client = new KVSClient(channel);
         serverId = port;
+        leaderId = -1;
         clients = new ArrayList<KVSClient>();
         this.kvStore = kvStore;
         for (Map<String, Object> server : servers) {
@@ -74,10 +77,10 @@ public abstract class KVService {
 
     public void ThrowExceptionToRejectGetPut() {
         Status status = Status.UNAVAILABLE.withDescription("I am not the leader");
+        System.out.println("The leader is at port " + leaderId);
         Metadata metadata = new Metadata();
-        metadata.put(Metadata.Key.of("ip", Metadata.ASCII_STRING_MARSHALLER), "SomeIP");
-        metadata.put(Metadata.Key.of("port", Metadata.ASCII_STRING_MARSHALLER), "SomePort");
-        throw status.asRuntimeException();
+        metadata.put(Metadata.Key.of("leaderPort", Metadata.ASCII_STRING_MARSHALLER), Integer.toString(leaderId));
+        throw status.asRuntimeException(metadata);
     }
 
     public Kvservice.RVResponse requestVotes(Kvservice.RVRequest req) {

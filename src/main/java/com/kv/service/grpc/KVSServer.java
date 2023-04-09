@@ -5,10 +5,7 @@ import com.kv.store.KVStoreImpl;
 import com.kv.store.LogStore;
 import com.kv.store.LogStoreImpl;
 import com.kvs.Kvservice;
-import io.grpc.Server;
-import io.grpc.ServerBuilder;
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
+import io.grpc.*;
 import io.grpc.stub.StreamObserver;
 import java.io.IOException;
 import java.io.File;
@@ -85,9 +82,9 @@ public class KVSServer {
 
         public void put(Kvservice.PutRequest req, StreamObserver<Kvservice.PutResponse> responseObserver) {
             System.out.println("Got request from client: " + req);
-            KVServiceFactory.getInstance().put(req.getKey(), req.getValue());
 
             try {
+                KVServiceFactory.getInstance().put(req.getKey(), req.getValue());
                 Kvservice.PutResponse reply = Kvservice.PutResponse.newBuilder().setValue(
                         req.getValue()
                 ).build();
@@ -101,9 +98,9 @@ public class KVSServer {
 
         public void get(Kvservice.GetRequest req, StreamObserver<Kvservice.GetResponse> responseObserver) {
             System.out.println("Got request from client: " + req);
-            int response = KVServiceFactory.getInstance().get(req.getKey());
 
             try {
+                int response = KVServiceFactory.getInstance().get(req.getKey());
                 Kvservice.GetResponse reply = Kvservice.GetResponse.newBuilder().setValue(
                         response
                 ).build();

@@ -1,11 +1,9 @@
 package com.kv.service.grpc;
 
+import com.kv.service.grpc.exception.NoLongerLeaderException;
 import com.kvs.KVServiceGrpc;
 import com.kvs.Kvservice;
-import io.grpc.Channel;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
-import io.grpc.StatusRuntimeException;
+import io.grpc.*;
 import lombok.SneakyThrows;
 
 import java.util.ArrayList;
@@ -22,30 +20,35 @@ public class KVSClient {
     public KVSClient(Channel channel) {
         blockingStub = KVServiceGrpc.newBlockingStub(channel);
     }
-    public void put(int key, int value) {
-
+    public void put(int key, int value) throws NoLongerLeaderException {
         Kvservice.PutRequest request = Kvservice.PutRequest.newBuilder().setKey(key).setValue(value).build();
-        System.out.println("Sending to server: " + request);
+        //System.out.println("Sending to server: " + request);
         Kvservice.PutResponse response;
         try {
             response = blockingStub.put(request);
         } catch (StatusRuntimeException e) {
             logger.log(Level.WARNING, "RPC failed: {0}", e.getStatus());
-            return;
+            Metadata metadata = e.getTrailers();
+            String metadataValue = metadata.get(Metadata.Key.of("leaderPort", Metadata.ASCII_STRING_MARSHALLER));
+            logger.log(Level.INFO, "New Leader port : " + metadataValue);
+            if (metadataValue != null && metadataValue.length() > 0) throw new NoLongerLeaderException(Integer.parseInt(metadataValue));
+            throw e;
         }
-        System.out.println("Got following from the server: " + response.getValue());
     }
 
     public int get(int key) throws Exception {
         Kvservice.GetRequest request = Kvservice.GetRequest.newBuilder().setKey(key).build();
-        System.out.println("Sending to server: " + request);
+        //System.out.println("Sending to server: " + request);
         Kvservice.GetResponse response;
         try {
             response = blockingStub.get(request);
             return response.getValue();
         } catch (StatusRuntimeException e) {
             logger.log(Level.WARNING, "RPC failed: {0}", e.getStatus());
-            throw new Exception("Key Not Found!");
+            Metadata metadata = e.getTrailers();
+            String metadataValue = metadata.get(Metadata.Key.of("leaderPort", Metadata.ASCII_STRING_MARSHALLER));
+            if (metadataValue != null && metadataValue.length() > 0) throw new NoLongerLeaderException(Integer.parseInt(metadataValue));
+            throw e;
         }
     }
 

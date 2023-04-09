@@ -86,6 +86,7 @@ public class FollowerKVSService extends KVService {
                 // Heart beat request
                 commitEntries(req);
                 System.out.println("Received heart beat request");
+                leaderId = req.getLeaderId();
                 return APEResponse.newBuilder().setSuccess(true).build();
             }
 
