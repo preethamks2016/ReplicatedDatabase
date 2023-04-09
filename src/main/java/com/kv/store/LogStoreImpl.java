@@ -89,24 +89,37 @@ public class LogStoreImpl implements LogStore {
         file.getChannel().force(true);
     }
 
+//    @Override
+//    public Optional<Log> getLastLogEntry() throws IOException {
+//        long offset = getEOFOffset();
+//        if (offset == 0)
+//            return Optional.empty();
+//        else {
+//            //if (finalLog != null) return Optional.of(finalLog);
+//            offset -= Log.SIZE;
+//            file.seek(offset);
+//            byte[] buffer = new byte[Log.SIZE];
+//            file.readFully(buffer);
+//            ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
+//            int index = byteBuffer.getInt();
+//            int term = byteBuffer.getInt();
+//            int key = byteBuffer.getInt();
+//            int value = byteBuffer.getInt();
+//            return Optional.of(new Log(index, term, key, value));
+//        }
+//    }
+
     @Override
     public Optional<Log> getLastLogEntry() throws IOException {
-        long offset = getEOFOffset();
-        if (offset == 0)
-            return Optional.empty();
-        else {
-            //if (finalLog != null) return Optional.of(finalLog);
-            offset -= Log.SIZE;
-            file.seek(offset);
-            byte[] buffer = new byte[Log.SIZE];
-            file.readFully(buffer);
-            ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
-            int index = byteBuffer.getInt();
-            int term = byteBuffer.getInt();
-            int key = byteBuffer.getInt();
-            int value = byteBuffer.getInt();
-            return Optional.of(new Log(index, term, key, value));
+        long offset = file.length();
+        if (offset == 0) return Optional.empty();
+        while (offset > 0) {
+            offset-=Log.SIZE;
+            int idx = (int) offset/Log.SIZE;
+            Optional<Log> optionalLog = ReadAtIndex(idx);
+            if (optionalLog.isPresent() && optionalLog.get().getIndex() != -1) return optionalLog;
         }
+        return Optional.empty();
     }
 
     public List<Log> readAllLogs() throws IOException {
