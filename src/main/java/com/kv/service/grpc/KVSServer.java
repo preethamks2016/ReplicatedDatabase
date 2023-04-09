@@ -36,6 +36,7 @@ public class KVSServer {
             public void run() {
                 System.err.println("Shutting down gRPC server");
                 try {
+                    System.out.println("Shutting down at - " + System.currentTimeMillis());
                     server.shutdown().awaitTermination(30, TimeUnit.SECONDS);
                 } catch (InterruptedException e) {
                     e.printStackTrace(System.err);

@@ -287,6 +287,7 @@ public class LeaderKVSService extends KVService {
     public ScheduledExecutorService start() throws IOException{
 
         System.out.println("I am now a leader ! Current term : " + logStore.getCurrentTerm());
+        System.out.println("Starting leader at - " + System.currentTimeMillis());
 
         ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(5);
         scheduledExecutorService.scheduleAtFixedRate(() -> {
