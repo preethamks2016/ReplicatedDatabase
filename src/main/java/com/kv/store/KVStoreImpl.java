@@ -1,24 +1,34 @@
 package com.kv.store;
 
-import com.kv.store.KVStore;
+import org.iq80.leveldb.DB;
+import org.iq80.leveldb.Options;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.io.File;
+import java.io.IOException;
+
+import static org.iq80.leveldb.impl.Iq80DBFactory.*;
 
 public class KVStoreImpl implements KVStore {
-    Map<Integer, Integer> map;
+    DB db;
 
-    public KVStoreImpl() {
-        this.map = new ConcurrentHashMap<>();
+    public KVStoreImpl(int port) throws IOException {
+        Options options = new Options();
+        options.createIfMissing(true);
+        db = factory.open(new File("levelDBStore" + port), options);
     }
 
     @Override
     public int get(int key) {
-        return map.get(key);
+        return Integer.parseInt(asString(db.get(bytes(String.valueOf(key)))));
     }
 
     @Override
     public void put(int key, int value) {
-        map.put(key, value);
+        db.put(bytes(String.valueOf(key)), bytes(String.valueOf(value)));
+    }
+
+    @Override
+    public void stop() throws IOException {
+        db.close();
     }
 }

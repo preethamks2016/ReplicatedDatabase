@@ -18,6 +18,8 @@ public interface LogStore {
     void WriteToIndex (Log log, int index) throws IOException;
     Optional<Log> getLastLogEntry() throws IOException;
 
+    int getNextIndex() throws IOException;
+
     List<Log> readAllLogs() throws IOException;
 
     Optional<Log> ReadAtIndex(int index) throws IOException;

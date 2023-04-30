@@ -21,28 +21,24 @@ message GetRequest {
 }
 
 message GetResponse {
-  int32 value = 1;
+  int32 index = 1;
+  int32 value = 2;
 }
 
 message Entry {
   int32 index = 1;
-  int32 term = 2;
-  int32 key = 3;
-  int32 value = 4;
+  int32 key = 2;
+  int32 value = 3;
 }
 
 message APERequest {
-  int32 leaderTerm = 1;
-  int32 prevLogIndex = 2;
-  int32 prevLogTerm = 3;
-  repeated Entry entry = 4;
-  int32 leaderCommitIdx = 5;
-  int32 leaderId = 6;
+  int32 index = 1;
+  repeated Entry entry = 2;
 }
 
 
 message APEResponse {
-  int32 currentTerm = 1;
+  int32 index = 1;
   bool success = 2;
 }
 

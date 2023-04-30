@@ -26,7 +26,7 @@ public class KVSServer {
 
     private void start(ServiceType serviceType, int port) throws IOException {
         LogStore logStore = new LogStoreImpl("log" + port + ".txt", "meta" + port + ".txt");
-        KVStore kvStore = new KVStoreImpl();
+        KVStore kvStore = new KVStoreImpl(port);
         ReadAllServers(port);
         KVServiceFactory.instantiateClasses(serviceType, logStore, servers, kvStore, port);
         server = ServerBuilder.forPort(port).addService(new KVSImpl()).build().start();
@@ -37,9 +37,13 @@ public class KVSServer {
                 System.err.println("Shutting down gRPC server");
                 try {
                     System.out.println("Shutting down at - " + System.currentTimeMillis());
+                    kvStore.stop();
                     server.shutdown().awaitTermination(30, TimeUnit.SECONDS);
                 } catch (InterruptedException e) {
                     e.printStackTrace(System.err);
+                } catch (IOException e) {
+                    e.printStackTrace(System.err);
+                    throw new RuntimeException(e);
                 }
             }
         });
@@ -48,7 +52,7 @@ public class KVSServer {
             try {
                 System.out.println("The Server is now starting !");
                 ScheduledExecutorService scheduledExecutor = KVServiceFactory.getInstance().start();
-                //wait for the scheduled executor to end
+//                //wait for the scheduled executor to end
                 scheduledExecutor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
                 System.out.println("Executor is terminated");
                 System.out.println("changing from - " +serviceType + " to - " + KVServiceFactory.getInstance().newServiceType);
@@ -101,20 +105,20 @@ public class KVSServer {
             System.out.println("Got request from client: " + req);
 
             try {
-                int response = KVServiceFactory.getInstance().get(req.getKey());
-                Kvservice.GetResponse reply = Kvservice.GetResponse.newBuilder().setValue(
-                        response
-                ).build();
-                responseObserver.onNext(reply);
+                Kvservice.GetResponse response = KVServiceFactory.getInstance().get(req.getKey());
+                responseObserver.onNext(response);
                 responseObserver.onCompleted();
             }
             catch (StatusRuntimeException ex) {
                 responseObserver.onError(ex);
+            } catch (IOException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
             }
         }
 
         public void appendEntriesRPC(Kvservice.APERequest req, StreamObserver<Kvservice.APEResponse> responseObserver) {
-            System.out.println("Got request from client: index:" + (req.getPrevLogIndex()+1) + ", nEntries: " + req.getEntryList().size());
+            System.out.println("Got request from client: index:" + req.getIndex() + ", nEntries: " + req.getEntryList().size());
             try {
                 Kvservice.APEResponse reply = KVServiceFactory.getInstance().appendEntries(req);
                 responseObserver.onNext(reply);
@@ -156,9 +160,9 @@ public class KVSServer {
                 case FOLLOWER:
                     kvService = new FollowerKVSService(logStore, kvStore, port);
                     break;
-                case CANDIDATE:
-                    kvService = new CandidateKVSService(logStore, servers, kvStore, port);
-                    break;
+//                case CANDIDATE:
+//                    kvService = new CandidateKVSService(logStore, servers, kvStore, port);
+//                    break;
             }
         }
     }

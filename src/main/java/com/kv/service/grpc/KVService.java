@@ -66,7 +66,16 @@ public abstract class KVService {
     }
 
     public abstract void put(int key, int value);
-    public abstract int get(int key);
+
+//    public abstract Kvservice.GetResponse get(int key) throws IOException;
+
+    public Kvservice.GetResponse get(int key) throws IOException {
+        return Kvservice.GetResponse.newBuilder()
+                .setIndex(logStore.getNextIndex())
+                .setValue(this.kvStore.get(key))
+                .build();
+    }
+
     public abstract ScheduledExecutorService start() throws IOException;
 
     public abstract void stop(ServiceType serviceType);

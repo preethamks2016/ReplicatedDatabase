@@ -41,55 +41,57 @@ public class LeaderKVSService extends KVService {
         }
     }
 
-    public Kvservice.APEResponse appendEntries(KVSClient client, Log prevLog, Log currentLog) throws IOException, NoLongerLeaderException {
-
-        Kvservice.APERequest request =  populateAPERequest(prevLog, currentLog);
+    public Kvservice.APEResponse appendEntries(KVSClient client, Log currentLog) throws IOException, NoLongerLeaderException {
+        Kvservice.APERequest request =  populateAPERequest(currentLog);
         Kvservice.APEResponse response = client.appendEntries(request);
-        while (!response.getSuccess()) {
-            if(response.getCurrentTerm() > request.getLeaderTerm()) {
-                stop(ServiceType.FOLLOWER);
-                throw new NoLongerLeaderException(0);
-                //todo:: should stop execution??
-                // follower term is greater than leader : fall back to follower state
-            } else {
-                // try comparing prev index - 1
-                List<Kvservice.Entry> entries = new ArrayList<>();
-                entries.add(getRequestEntry(prevLog));
-                entries.addAll(request.getEntryList());
-                if (prevLog.getIndex() != 0) {
-                    Optional<Log> optionalLog = logStore.ReadAtIndex(prevLog.getIndex() - 1);
-                    prevLog = optionalLog.get();
-                }
-                else {
-                    prevLog = null;
-                }
-
-                request = setPrevLogEntries(request, prevLog, entries);
-                response = client.appendEntries(request);
+        // handle failures / mismatches
+        while (!response.getSuccess() && response.getIndex()<currentLog.getIndex()) {
+            List<Kvservice.Entry> entries = new ArrayList<>();
+            for (int index = response.getIndex(); index <= currentLog.getIndex(); index++) {
+                entries.add(getRequestEntry(logStore.ReadAtIndex(index).get()));
             }
+            request = setPrevLogEntries(response.getIndex(), entries);
+            response = client.appendEntries(request);
         }
+
+//        while (!response.getSuccess()) {
+//            if(response.getCurrentTerm() > request.getLeaderTerm()) {
+//                stop(ServiceType.FOLLOWER);
+//                throw new NoLongerLeaderException(0);
+//                //todo:: should stop execution??
+//                // follower term is greater than leader : fall back to follower state
+//            } else {
+//                // try comparing prev index - 1
+//                List<Kvservice.Entry> entries = new ArrayList<>();
+//                entries.add(getRequestEntry(prevLog));
+//                entries.addAll(request.getEntryList());
+//                if (prevLog.getIndex() != 0) {
+//                    Optional<Log> optionalLog = logStore.ReadAtIndex(prevLog.getIndex() - 1);
+//                    prevLog = optionalLog.get();
+//                }
+//                else {
+//                    prevLog = null;
+//                }
+//
+//                request = setPrevLogEntries(request, prevLog, entries);
+//                response = client.appendEntries(request);
+//            }
+//        }
         return response;
     }
 
-    private Kvservice.APERequest setPrevLogEntries(Kvservice.APERequest request, Log prevLog, List<Kvservice.Entry> entries) {
-
-        Kvservice.APERequest newRequest = Kvservice.APERequest.newBuilder()
-                .setLeaderTerm(request.getLeaderTerm())
-                .setPrevLogIndex(prevLog == null ? -1 : prevLog.getIndex())
-                .setPrevLogTerm(prevLog == null ? -1 : prevLog.getTerm())
+    private Kvservice.APERequest setPrevLogEntries(int index, List<Kvservice.Entry> entries) {
+        return Kvservice.APERequest.newBuilder()
+                .setIndex(index)
                 .addAllEntry(entries)
-                .setLeaderCommitIdx(logStore.getCommitIndex())
                 .build();
-        return newRequest;
     }
 
     private Kvservice.Entry getRequestEntry(Log log) {
-        Kvservice.Entry entry = Kvservice.Entry.newBuilder()
+        return Kvservice.Entry.newBuilder()
                 .setIndex(log.getIndex())
-                .setTerm(log.getTerm())
                 .setKey(log.getKey())
                 .setValue(log.getValue()).build();
-        return entry;
     }
 
     public class MyRunnable implements Callable<Kvservice.APEResponse> {
@@ -97,15 +99,11 @@ public class LeaderKVSService extends KVService {
         private final int clientIdx;
         private final int currentLogIndex;
 
-        private final Log prevLog;
-
         private final Log currentLog;
 
-
-        public MyRunnable( int clientIndex, int currentLogIndex, Log prevLog, Log currentLog) {
+        public MyRunnable( int clientIndex, int currentLogIndex, Log currentLog) {
             this.clientIdx = clientIndex;
             this.currentLogIndex = currentLogIndex;
-            this.prevLog = prevLog;
             this.currentLog = currentLog;
         }
 
@@ -135,7 +133,7 @@ public class LeaderKVSService extends KVService {
 
             Kvservice.APEResponse response = null;
             try {
-                response = appendEntries(clients.get(clientIdx), prevLog, currentLog);
+                response = appendEntries(clients.get(clientIdx), currentLog);
             } catch (NoLongerLeaderException e) {
                 executor.shutdownNow();
             } catch (Exception e) {
@@ -157,67 +155,29 @@ public class LeaderKVSService extends KVService {
     public void put(int key, int value) {
         try {
             lock.lock();
-            Log prevLog;
-            Log currentLog;
-            Optional<Log> optionalLog = logStore.getLastLogEntry();
 
             // write to own log
-            if (optionalLog.isPresent()) {
-                prevLog = optionalLog.get();
-                currentLog = new Log(prevLog.getIndex() + 1, logStore.getCurrentTerm(), key, value);
-                logStore.WriteToIndex(currentLog, currentLog.getIndex());
-            } else {
-                prevLog = null;
-                currentLog =  new Log(0, logStore.getCurrentTerm(), key, value);
-                logStore.WriteToIndex(currentLog, currentLog.getIndex());
-            }
+            int idx = logStore.getNextIndex();
+            Log log =  new Log(idx, -1, key, value); // term is not required here
+            logStore.WriteToIndex(log, idx);
+
+            // write to levelDB
+            kvStore.put(key, value);
 
             // create new sync object for current index
             for (int i = 0; i < clients.size(); i++) {
-                syncObjects.get(i).put(currentLog.getIndex(), new Object());
-                resultValidation.get(i).put(currentLog.getIndex(), 0);
+                syncObjects.get(i).put(idx, new Object());
+                resultValidation.get(i).put(idx, 0);
             }
-
 
             lock.unlock();
 
-            int currentLogIndex = currentLog.getIndex();
             CompletionService<Kvservice.APEResponse> completionService = new ExecutorCompletionService<>(executor);
             for (int i = 0; i < clients.size(); i++) {
 
                 final int clientIdx = i;
-                MyRunnable task = new MyRunnable(clientIdx, currentLogIndex, prevLog, currentLog);
+                MyRunnable task = new MyRunnable(clientIdx, idx, log);
                 completionService.submit(task);
-                /*-> {
-
-
-                    // synchronization wait for previous log index to complete
-                    if (syncObjects.get(clientIdx).contains(currentLogIndex-1)) {
-                        Object prevObject = syncObjects.get(clientIdx).get(currentLogIndex-1);
-
-                        try {
-                            synchronized (prevObject) {
-                                prevObject.wait();
-                            }
-                        }
-                        catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                    Kvservice.APEResponse response = null;
-                    try {
-                         response = appendEntries(clients.get(clientIdx), prevLog, currentLog);
-                    } catch (NoLongerLeaderException e) {
-                        executor.shutdownNow();
-                    }
-                    // notify future put requests
-                    Object currentSyncObject = syncObjects.get(clientIdx).get(currentLogIndex);
-                    synchronized (currentSyncObject) {
-                        syncObjects.get(clientIdx).remove(currentLogIndex);
-                        currentSyncObject.notify();
-                    }
-                    return response;
-                });*/
             }
 
             int ackCount = 1;
@@ -242,44 +202,32 @@ public class LeaderKVSService extends KVService {
                     // handle exception from server
                 }
             }
-            synchronized (this) {
-                for(int index = logStore.getCommitIndex() + 1; index <= currentLogIndex; index++){
-                    Optional<Log> log = logStore.ReadAtIndex(index);
-                    kvStore.put(log.get().getKey(), log.get().getValue());
-                }
-                logStore.setCommitIndex(currentLogIndex);
-            }
-
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-
-        return;
     }
 
-    @Override
-    public int get(int key) {
-        return this.kvStore.get(key);
-    }
+//    @Override
+//    public Kvservice.GetResponse get(int key) throws IOException {
+//        return Kvservice.GetResponse.newBuilder()
+//                .setIndex(logStore.getNextIndex())
+//                .setValue(this.kvStore.get(key))
+//                .build();
+//    }
 
-    private Kvservice.APERequest populateAPERequest(Log prevLog, Log currentLog) {
+    private Kvservice.APERequest populateAPERequest(Log currentLog) {
 
         List<Kvservice.Entry> entries = new ArrayList<>();
         Kvservice.Entry entry = Kvservice.Entry.newBuilder()
                 .setIndex(currentLog.getIndex())
-                .setTerm(currentLog.getTerm())
                 .setKey(currentLog.getKey())
                 .setValue(currentLog.getValue()).build();
         entries.add(entry);
 
-        Kvservice.APERequest request = Kvservice.APERequest.newBuilder()
-                .setLeaderTerm(currentLog.getTerm())
-                .setPrevLogIndex(prevLog == null ? -1 : prevLog.getIndex())
-                .setPrevLogTerm(prevLog == null ? -1 : prevLog.getTerm())
+        return Kvservice.APERequest.newBuilder()
+                .setIndex(currentLog.getIndex())
                 .addAllEntry(entries)
-                .setLeaderCommitIdx(logStore.getCommitIndex())
                 .build();
-        return request;
 
     }
 
@@ -290,31 +238,28 @@ public class LeaderKVSService extends KVService {
         System.out.println("Starting leader at - " + System.currentTimeMillis());
 
         ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(5);
-        scheduledExecutorService.scheduleAtFixedRate(() -> {
-            try {
-                Kvservice.APERequest request = Kvservice.APERequest.newBuilder()
-                        .setLeaderTerm(logStore.getCurrentTerm())
-                        .setLeaderCommitIdx(logStore.getCommitIndex())
-                        .setLeaderId(serverId)
-                        .build();
-
-            //todo :: may be add all required details
-
-            CompletionService<Kvservice.APEResponse> completionService = new ExecutorCompletionService<>(executor);
-
-                for (KVSClient client : clients) {
-                    System.out.println("Sending heartbeat to client!!!");
-                    completionService.submit(() -> {
-                        Kvservice.APEResponse response;
-                        response = client.appendEntries(request);
-                        return response;
-                    });
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-                throw new RuntimeException(e);
-            }
-        }, 0, 5, TimeUnit.SECONDS);
+//        scheduledExecutorService.scheduleAtFixedRate(() -> {
+//            try {
+//                Kvservice.APERequest request = Kvservice.APERequest.newBuilder()
+//                        .build();
+//
+//            //todo :: may be add all required details
+//
+//            CompletionService<Kvservice.APEResponse> completionService = new ExecutorCompletionService<>(executor);
+//
+//                for (KVSClient client : clients) {
+//                    System.out.println("Sending heartbeat to client!!!");
+//                    completionService.submit(() -> {
+//                        Kvservice.APEResponse response;
+//                        response = client.appendEntries(request);
+//                        return response;
+//                    });
+//                }
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//                throw new RuntimeException(e);
+//            }
+//        }, 0, 5, TimeUnit.SECONDS);
         scheduledExecutor = scheduledExecutorService;
         return scheduledExecutorService;
     }
@@ -333,21 +278,23 @@ public class LeaderKVSService extends KVService {
 
     @Override
     public Kvservice.APEResponse appendEntries(Kvservice.APERequest req) {
-        try {
-            int currentTerm = logStore.getCurrentTerm();
-            if (req.getLeaderTerm() >= currentTerm) {
-                System.out.println("Invalid call: Leader cannot receive append entries");
-                // update term
-                logStore.setTerm(req.getLeaderTerm());
-                stop(ServiceType.FOLLOWER); // return to follower state
-                throw new Exception("Make the RPC call fail");
-            }
-            else {
-                return Kvservice.APEResponse.newBuilder().setCurrentTerm(currentTerm).setSuccess(false).build();
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        // Leader cannot receive append entries
+        return Kvservice.APEResponse.newBuilder().setSuccess(false).build();
+//        try {
+//            int currentTerm = logStore.getCurrentTerm();
+//            if (req.getLeaderTerm() >= currentTerm) {
+//                System.out.println("Invalid call: Leader cannot receive append entries");
+//                // update term
+//                logStore.setTerm(req.getLeaderTerm());
+//                stop(ServiceType.FOLLOWER); // return to follower state
+//                throw new Exception("Make the RPC call fail");
+//            }
+//            else {
+//                return Kvservice.APEResponse.newBuilder().setCurrentTerm(currentTerm).setSuccess(false).build();
+//            }
+//        } catch (Exception e) {
+//            throw new RuntimeException(e);
+//        }
     }
 
     @Override

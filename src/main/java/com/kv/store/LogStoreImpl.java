@@ -122,6 +122,12 @@ public class LogStoreImpl implements LogStore {
         return Optional.empty();
     }
 
+    @Override
+    public int getNextIndex() throws IOException {
+        long offset = file.length();
+        return (int) offset/Log.SIZE;
+    }
+
     public List<Log> readAllLogs() throws IOException {
         List<Log> logs = new ArrayList<>();
         byte[] buffer = new byte[Log.SIZE];
