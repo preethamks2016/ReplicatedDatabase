@@ -175,13 +175,14 @@ public class KVSClient {
 ////            client.put(7, 700);
 //            client.put(8, 700);
 //            client.put(9, 700);
-            client.put(10, 1000);
-
-            System.out.println(client.get(5));
-            System.out.println(client.get(7));
+            client.put(11, 1000);
+//
+//            System.out.println(client.get(5));
+//            System.out.println(client.get(7));
 
             LogStore logStore1 = new LogStoreImpl("log5050.txt", "meta5050.txt");
             LogStore logStore2 = new LogStoreImpl("log5051.txt", "meta5051.txt");
+            LogStore logStore3 = new LogStoreImpl("log5052.txt", "meta5051.txt");
             List<Log> logs;
     //
 
@@ -192,6 +193,12 @@ public class KVSClient {
             System.out.println(logs.size());
 
             logs = logStore2.readAllLogs();
+            for(Log log:logs) {
+                System.out.println("idx: "+ log.getIndex() + ", term: "+ log.getTerm() + ", key: " + log.getKey() + ", value: " + log.getValue());
+            }
+            System.out.println(logs.size());
+
+            logs = logStore3.readAllLogs();
             for(Log log:logs) {
                 System.out.println("idx: "+ log.getIndex() + ", term: "+ log.getTerm() + ", key: " + log.getKey() + ", value: " + log.getValue());
             }

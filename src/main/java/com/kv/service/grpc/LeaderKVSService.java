@@ -189,9 +189,8 @@ public class LeaderKVSService extends KVService {
                         ackCount++;
                     }
                     else {
-                        //this happens only when leaders term is less than followers
-                        return;
-                        // todo: handle failure
+                        // this can happen if a follower is unreachable or not upto date
+                        // code can get stuck in an infinite loop here if majority nodes are unreachable (since retries number is fixed)
                     }
                 } catch (InterruptedException e) {
                     e.printStackTrace();
