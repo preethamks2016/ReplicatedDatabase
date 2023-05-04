@@ -9,26 +9,93 @@ import io.grpc.*;
 import io.grpc.stub.StreamObserver;
 import java.io.IOException;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import com.kvs.KVServiceGrpc;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.zookeeper.*;
+import org.apache.zookeeper.data.Stat;
 
 
-public class KVSServer {
+public class KVSServer implements Watcher {
     private static final Logger logger = Logger.getLogger(KVSServer.class.getName());
-    private List<Map<String, Object>> servers;
+    private LogStore logStore;
+    private KVStore kvStore;
+    private List<String> servers;
     private Server server;
+    private ZooKeeper zk;
+    private String znodePath;
+    private String currentNodeId;
+    private final String ZNODE_PREFIX = "/election-";
+    private final String ZNODE_PATH = "/election";
+    private final String LEADER_PATH = "/leader-data";
+    private final int SESSION_TIMEOUT = 3000;
+    private String IpPort = "";
 
-    private void start(ServiceType serviceType, int port) throws IOException {
-        LogStore logStore = new LogStoreImpl("log" + port + ".txt", "meta" + port + ".txt");
-        KVStore kvStore = new KVStoreImpl(port);
-        ReadAllServers(port);
+    public KVSServer(String zkHostPort) throws IOException, InterruptedException, KeeperException {
+        this.zk = new ZooKeeper(zkHostPort, SESSION_TIMEOUT, this);
+//        if (zk.exists(ZNODE_PATH, false) == null) {
+//            zk.create(ZNODE_PATH, new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+//        }
+    }
+
+    private void electLeader(int port) throws KeeperException, InterruptedException, IOException {
+        List<String> children = zk.getChildren(ZNODE_PATH, false);
+        Collections.sort(children);
+        String smallestChild = children.get(0);
+        if (currentNodeId.equals(ZNODE_PATH + "/" + smallestChild)) {
+            System.out.println("I am the leader!");
+            // Do leader-specific work here
+
+            // Update config
+            zk.setData(LEADER_PATH, IpPort.getBytes(), -1);
+            Thread.sleep(10000);
+
+            // Update in memory servers
+            ReadAllServers(port);
+            KVServiceFactory.instantiateClasses(ServiceType.LEADER, logStore, servers, kvStore, port);
+        } else {
+            System.out.println("I am not the leader.");
+            // Wait for the smallest node to change, then try to elect a leader again
+            System.out.println("CurrentNodeId : " + currentNodeId.split("/")[2]);
+            System.out.println("All Children");
+            for (String c : children) {
+                System.out.println("Child: " + c);
+            }
+
+            TreeSet<String> set = new TreeSet<String>(children);
+            String prevNode = set.lower(currentNodeId.split("/")[2]);
+            System.out.println("Watching on prevNode: " + prevNode);
+            Stat prevNodeStat = zk.exists(ZNODE_PATH + "/" + prevNode, true);
+        }
+    }
+
+    public void ReadAllServers(int port) throws InterruptedException, KeeperException {
+        // Update in memory servers
+        List<String> allServers = zk.getChildren(ZNODE_PATH, false);
+        this.servers = new ArrayList<String>();
+        for (String server : allServers) {
+            String childPath = ZNODE_PATH + "/" + server;
+            byte[] data = zk.getData(childPath, false, null);
+            String dataStr = new String(data);
+            if (dataStr.contains(Integer.toString(port))) continue;
+            this.servers.add(dataStr);
+        }
+    }
+
+    private void start(ServiceType serviceType, String IpPort) throws IOException, InterruptedException, KeeperException {
+        this.IpPort = IpPort;
+        int port = Integer.valueOf(IpPort.split(":")[1]);
+        this.logStore = new LogStoreImpl("log" + port + ".txt", "meta" + port + ".txt");
+        this.kvStore = new KVStoreImpl(port);
+
+        currentNodeId = zk.create(ZNODE_PATH + ZNODE_PREFIX, IpPort.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL);
+        System.out.println("Node created with id: " + currentNodeId);
         KVServiceFactory.instantiateClasses(serviceType, logStore, servers, kvStore, port);
+        electLeader(port);
+        //ReadAllServers(port);
         server = ServerBuilder.forPort(port).addService(new KVSImpl()).build().start();
 
         Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -55,7 +122,7 @@ public class KVSServer {
 //                //wait for the scheduled executor to end
                 scheduledExecutor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
                 System.out.println("Executor is terminated");
-                System.out.println("changing from - " +serviceType + " to - " + KVServiceFactory.getInstance().newServiceType);
+                System.out.println("changing from - " + serviceType + " to - " + KVServiceFactory.getInstance().newServiceType);
                 serviceType = KVServiceFactory.getInstance().newServiceType;
                 //instantiate new class
                 KVServiceFactory.instantiateClasses(serviceType, logStore, servers, kvStore, port);
@@ -63,22 +130,20 @@ public class KVSServer {
 
             }
         }
-
-
     }
 
-    private void ReadAllServers(int selfPort) throws IOException {
-        ObjectMapper objectMapper = new ObjectMapper();
-        File configFile = new File("servers.json");
-        Map<String, Object> configMap = objectMapper.readValue(configFile, Map.class);
-        List<Map<String, Object>> allServers = (List<Map<String, Object>>) configMap.get("servers");
 
-        servers = new ArrayList<Map<String, Object>>();
-        for (Map<String, Object> serverMap : allServers) {
-            int port = (int) serverMap.get("port");
-            if (port != selfPort) {
-                servers.add(serverMap);
-            }
+    @Override
+    public void process(WatchedEvent watchedEvent) {
+        try {
+            System.out.println("Got watch event");
+            electLeader(Integer.valueOf(IpPort.split(":")[1]));
+        } catch (KeeperException e) {
+            throw new RuntimeException(e);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -152,7 +217,7 @@ public class KVSServer {
             return kvService;
         }
 
-        public static void instantiateClasses(ServiceType type, LogStore logStore, List<Map<String, Object>> servers, KVStore kvStore, int port) throws IOException {
+        public static void instantiateClasses(ServiceType type, LogStore logStore, List<String> servers, KVStore kvStore, int port) throws IOException {
             switch (type){
                 case LEADER:
                     kvService = new LeaderKVSService(logStore, servers, kvStore, port);
@@ -167,9 +232,9 @@ public class KVSServer {
         }
     }
 
-    public static void main(String[] args) throws IOException, InterruptedException {
-        final KVSServer kvs = new KVSServer();
-        kvs.start(ServiceType.valueOf(args[0]), Integer.valueOf(args[1]));
+    public static void main(String[] args) throws IOException, InterruptedException, KeeperException {
+        final KVSServer kvs = new KVSServer("127.0.0.1:2181");
+        kvs.start(ServiceType.FOLLOWER, args[0]);
         kvs.server.awaitTermination();
     }
 

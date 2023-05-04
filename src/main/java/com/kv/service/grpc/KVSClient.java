@@ -70,21 +70,6 @@ public class KVSClient {
 
     @SneakyThrows
     public Kvservice.APEResponse appendEntries(Kvservice.APERequest request) {
-//        Kvservice.Entry entry = Kvservice.Entry.newBuilder()
-//                .setIndex(prevIndex + 1)
-//                .setTerm(leaderTerm)
-//                .setKey(key)
-//                .setValue(value).build();
-//        List<Kvservice.Entry> entries = new ArrayList<>();
-//        entries.add(entry);
-//
-//        Kvservice.APERequest request = Kvservice.APERequest.newBuilder()
-//                .setLeaderTerm(leaderTerm)
-//                .setPrevLogIndex(prevIndex)
-//                .setPrevLogTerm(prevTerm)
-//                .addAllEntry(entries)
-//                .build();
-
         Kvservice.APEResponse response = null;
 
         int retries = 3;

@@ -39,7 +39,7 @@ public abstract class KVService {
 
     protected int leaderId;
 
-    public KVService (LogStore logStore, List<Map<String, Object>> servers, KVStore kvStore, int port) {
+    public KVService (LogStore logStore, List<String> servers, KVStore kvStore, int port) {
 //        String serverAddress = "localhost:50051";
 //        ManagedChannel channel = ManagedChannelBuilder.forTarget(serverAddress)
 //                .usePlaintext()
@@ -49,8 +49,8 @@ public abstract class KVService {
         leaderId = -1;
         clients = new ArrayList<KVSClient>();
         this.kvStore = kvStore;
-        for (Map<String, Object> server : servers) {
-            ManagedChannel channel = ManagedChannelBuilder.forTarget(server.get("ip").toString() + ":" + server.get("port").toString())
+        for (String server : servers) {
+            ManagedChannel channel = ManagedChannelBuilder.forTarget(server)
                                         .usePlaintext()
                                         .enableRetry()
                                         .maxRetryAttempts(10000)

@@ -8,6 +8,9 @@ import com.kvs.Kvservice.APERequest;
 import com.kvs.Kvservice.APEResponse;
 import io.grpc.Metadata;
 import io.grpc.Status;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -17,11 +20,20 @@ import java.util.concurrent.*;
 
 public class FollowerKVSService extends KVService {
 
+    // Zookeeper data
+    private ZooKeeper zk;
+    private String znodePath;
+    private String currentNodeId;
+    private final String ZNODE_PREFIX = "/election-";
+    private final String ZNODE_PATH = "/election";
+    private final int SESSION_TIMEOUT = 3000;
+
+
     long lastReceivedTS;
     private Object lockObject;
 
     public FollowerKVSService(LogStore logStore, KVStore kvStore, int port) {
-        super(logStore, new ArrayList<Map<String, Object>>(), kvStore, port);
+        super(logStore, new ArrayList<String>(), kvStore, port);
         lastReceivedTS = System.currentTimeMillis();
         lockObject = new Object();
     }
@@ -49,12 +61,6 @@ public class FollowerKVSService extends KVService {
         long threshhold = 10 * 1000;
         int period = 6;
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
-//        executor.scheduleAtFixedRate(() -> {
-//                    if (System.currentTimeMillis() - lastReceivedTS > threshhold) {
-//                        stop(ServiceType.CANDIDATE);
-//                    }
-//                }, (int) (5 + (Math.random() * (7 - 5))), period
-//                , TimeUnit.SECONDS);
         scheduledExecutor = executor;
         return executor;
     }
@@ -89,11 +95,6 @@ public class FollowerKVSService extends KVService {
                 kvStore.put(entry.getKey(), entry.getValue());
                 followerIndex++;
             }
-
-//            // commit entries
-//            synchronized (lockObject) {
-//                commitEntries(req);
-//            }
 
             return APEResponse.newBuilder().setIndex(followerIndex).setSuccess(true).build();
         } catch (IOException ex) {

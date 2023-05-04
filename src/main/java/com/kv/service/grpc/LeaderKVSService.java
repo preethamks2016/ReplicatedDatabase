@@ -21,10 +21,9 @@ public class LeaderKVSService extends KVService {
     private List<ConcurrentHashMap<Integer, Object>> syncObjects;
 
     private List<ConcurrentHashMap<Integer, Integer>> resultValidation;
-    private Map<String, String> portToIP;
 
     ReentrantLock lock;
-    LeaderKVSService(LogStore logStore, List<Map<String, Object>> servers, KVStore kvStore, int port) {
+    LeaderKVSService(LogStore logStore, List<String> servers, KVStore kvStore, int port) {
         super(logStore, servers, kvStore, port);
         lock = new ReentrantLock();
         executor = Executors.newFixedThreadPool(5);
@@ -33,11 +32,6 @@ public class LeaderKVSService extends KVService {
         for (int i = 0; i < clients.size(); i++) {
             syncObjects.add(new ConcurrentHashMap<Integer, Object>());
             resultValidation.add(new ConcurrentHashMap<Integer, Integer>());
-        }
-
-        portToIP = new HashMap<String, String>();
-        for (Map<String, Object> server : servers) {
-            portToIP.put(server.get("port").toString(), server.get("ip").toString());
         }
     }
 
