@@ -65,7 +65,7 @@ public abstract class KVService {
         BasicConfigurator.configure();
     }
 
-    public abstract void put(int key, int value);
+    public abstract Kvservice.PutResponse put(int key, int value);
 
 //    public abstract Kvservice.GetResponse get(int key) throws IOException;
 
