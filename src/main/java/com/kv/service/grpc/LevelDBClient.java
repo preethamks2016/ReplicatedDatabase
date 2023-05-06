@@ -198,7 +198,7 @@ public class LevelDBClient implements Watcher {
     }
 
     public static void main(String[] args) throws Exception {
-        LevelDBClient client = new LevelDBClient("127.0.0.1:2181", "/leader-data", "/election", ConsistencyType.EVENTUAL);
+        LevelDBClient client = new LevelDBClient("10.10.1.2:2181", "/leader-data", "/election", ConsistencyType.EVENTUAL);
         client.put(1, 2);
 
         System.out.println(client.get(1));

@@ -230,7 +230,7 @@ public class KVSServer implements Watcher {
     }
 
     public static void main(String[] args) throws IOException, InterruptedException, KeeperException {
-        final KVSServer kvs = new KVSServer("127.0.0.1:2181");
+        final KVSServer kvs = new KVSServer("10.10.1.2:2181");
         kvs.start(ServiceType.FOLLOWER, args[0]);
         kvs.server.awaitTermination();
     }
