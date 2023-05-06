@@ -154,6 +154,11 @@ public class LevelDBClient implements Watcher {
         com.kvs.Kvservice.PutResponse response;
         try {
             response = writeStub.put(request);
+            synchronized (indexObject) {
+                if(response.getIndex() > latestIndex) {
+                    latestIndex = response.getIndex();
+                }
+            }
         } catch (StatusRuntimeException e) {
             logger.log(Level.WARNING, "RPC failed: {0}", e.getStatus());
             Metadata metadata = e.getTrailers();
