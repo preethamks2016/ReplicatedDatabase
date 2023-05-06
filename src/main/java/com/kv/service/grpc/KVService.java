@@ -39,7 +39,7 @@ public abstract class KVService {
 
     protected int leaderId;
 
-    public KVService (LogStore logStore, List<Map<String, Object>> servers, KVStore kvStore, int port) {
+    public KVService (LogStore logStore, List<String> servers, KVStore kvStore, int port) {
 //        String serverAddress = "localhost:50051";
 //        ManagedChannel channel = ManagedChannelBuilder.forTarget(serverAddress)
 //                .usePlaintext()
@@ -49,8 +49,8 @@ public abstract class KVService {
         leaderId = -1;
         clients = new ArrayList<KVSClient>();
         this.kvStore = kvStore;
-        for (Map<String, Object> server : servers) {
-            ManagedChannel channel = ManagedChannelBuilder.forTarget(server.get("ip").toString() + ":" + server.get("port").toString())
+        for (String server : servers) {
+            ManagedChannel channel = ManagedChannelBuilder.forTarget(server)
                                         .usePlaintext()
                                         .enableRetry()
                                         .maxRetryAttempts(10000)
@@ -66,7 +66,16 @@ public abstract class KVService {
     }
 
     public abstract void put(int key, int value);
-    public abstract int get(int key);
+
+//    public abstract Kvservice.GetResponse get(int key) throws IOException;
+
+    public Kvservice.GetResponse get(int key) throws IOException {
+        return Kvservice.GetResponse.newBuilder()
+                .setIndex(logStore.getNextIndex())
+                .setValue(this.kvStore.get(key) + serverId)
+                .build();
+    }
+
     public abstract ScheduledExecutorService start() throws IOException;
 
     public abstract void stop(ServiceType serviceType);
