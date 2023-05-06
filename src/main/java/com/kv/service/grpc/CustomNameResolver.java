@@ -12,19 +12,26 @@ public class CustomNameResolver extends NameResolver {
 
     List<EquivalentAddressGroup> addresses;
 
-    private volatile Listener2 listener;
+    private volatile Listener listener;
 
     public CustomNameResolver(List<EquivalentAddressGroup> addressGroups) {
         addresses = addressGroups;
     }
+
+    @Override
+    public void start(Listener listener) {
+        this.listener = listener;
+        listener.onAddresses(addresses, Attributes.EMPTY);
+    }
+
     @Override
     public String getServiceAuthority() {
         return "fakeAuthority";
     }
 
-    public void start(Listener2 listener) {
-        listener.onResult(ResolutionResult.newBuilder().setAddresses(addresses).setAttributes(Attributes.EMPTY).build());
-    }
+//    public void start(Listener2 listener) {
+//        listener.onResult(ResolutionResult.newBuilder().setAddresses(addresses).setAttributes(Attributes.EMPTY).build());
+//    }
 
     public void resolve(List<EquivalentAddressGroup> addresses) {
         this.addresses = addresses;
