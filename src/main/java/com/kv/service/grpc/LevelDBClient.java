@@ -199,14 +199,19 @@ public class LevelDBClient implements Watcher {
 
     public static void main(String[] args) throws Exception {
         LevelDBClient client = new LevelDBClient("10.10.1.2:2181", "/leader-data", "/election", ConsistencyType.EVENTUAL);
-        client.put(1, 2);
-
-        System.out.println(client.get(1));
-
-        while (true){
-
-            sleep(3000);
+        for (int i = 0; i < 5000; i++) {
+            System.out.println(i);
+            client.put(i, 2*i);
         }
+
+        System.out.println(client.get(3023));
+
+//        System.out.println(client.get(1));
+//
+//        while (true){
+//
+//            sleep(3000);
+//        }
 
     }
 

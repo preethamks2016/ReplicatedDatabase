@@ -72,7 +72,7 @@ public abstract class KVService {
     public Kvservice.GetResponse get(int key) throws IOException {
         return Kvservice.GetResponse.newBuilder()
                 .setIndex(logStore.getNextIndex())
-                .setValue(this.kvStore.get(key) + serverId)
+                .setValue(this.kvStore.get(key))
                 .build();
     }
 
