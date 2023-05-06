@@ -6,16 +6,10 @@ import com.kv.store.LogStore;
 import com.kvs.Kvservice;
 import com.kvs.Kvservice.APERequest;
 import com.kvs.Kvservice.APEResponse;
-import io.grpc.Metadata;
-import io.grpc.Status;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.*;
 
 public class FollowerKVSService extends KVService {
@@ -39,8 +33,9 @@ public class FollowerKVSService extends KVService {
     }
 
     @Override
-    public void put(int key, int value) {
+    public Kvservice.PutResponse put(int key, int value) {
         ThrowExceptionToRejectGetPut();
+        return null;
     }
 
 //    @Override

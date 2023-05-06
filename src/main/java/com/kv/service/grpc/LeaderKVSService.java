@@ -5,7 +5,6 @@ import com.kv.store.KVStore;
 import com.kv.store.Log;
 import com.kv.store.LogStore;
 import com.kvs.Kvservice;
-import io.grpc.Metadata;
 import lombok.SneakyThrows;
 
 import java.io.IOException;
@@ -146,7 +145,7 @@ public class LeaderKVSService extends KVService {
     }
 
     @Override
-    public void put(int key, int value) {
+    public Kvservice.PutResponse put(int key, int value) {
         try {
             lock.lock();
 
@@ -195,9 +194,11 @@ public class LeaderKVSService extends KVService {
                     // handle exception from server
                 }
             }
+            return Kvservice.PutResponse.newBuilder().setIndex(idx).build();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+
     }
 
 //    @Override

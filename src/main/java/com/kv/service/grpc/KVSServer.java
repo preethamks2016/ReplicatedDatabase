@@ -154,11 +154,8 @@ public class KVSServer implements Watcher {
             System.out.println("Got request from client: " + req);
 
             try {
-                KVServiceFactory.getInstance().put(req.getKey(), req.getValue());
-                Kvservice.PutResponse reply = Kvservice.PutResponse.newBuilder().setValue(
-                        req.getValue()
-                ).build();
-                responseObserver.onNext(reply);
+                Kvservice.PutResponse response = KVServiceFactory.getInstance().put(req.getKey(), req.getValue());
+                responseObserver.onNext(response);
                 responseObserver.onCompleted();
             }
             catch (StatusRuntimeException ex) {

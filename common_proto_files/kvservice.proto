@@ -13,7 +13,7 @@ message PutRequest {
 }
 
 message PutResponse {
-  int32 value = 1;
+  int32 index = 1;
 }
 
 message GetRequest {
