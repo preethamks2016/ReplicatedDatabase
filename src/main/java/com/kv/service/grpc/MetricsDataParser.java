@@ -57,7 +57,7 @@ public class MetricsDataParser {
     }
 
     private static List<MetricsDataParser> getMetrics(Map<String, String> fileNames, int numNodes) {
-        List<Integer> numRequqsts = Arrays.asList(1000,3000,5000,1000);
+        List<Integer> numRequqsts = Arrays.asList(1000, 3000, 5000, 10000, 100000);
         List<ConsistencyType> consistencyTypes = Arrays.asList(ConsistencyType.STRONG, ConsistencyType.EVENTUAL, ConsistencyType.MONOTONIC_READS, ConsistencyType.READ_MY_WRITES);
         List<String> metricsTypes = Arrays.asList("writeLatencies", "readLatencies", "overallMetrics");
         List<String> loadPolicy = Arrays.asList("random", "round_robin");

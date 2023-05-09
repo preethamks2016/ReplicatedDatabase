@@ -153,7 +153,7 @@ public class KVSServer implements Watcher {
 
         public static long delay = 0;
 
-        private static ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        private static ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(8);
 
 
         public void put(Kvservice.PutRequest req, StreamObserver<Kvservice.PutResponse> responseObserver) {

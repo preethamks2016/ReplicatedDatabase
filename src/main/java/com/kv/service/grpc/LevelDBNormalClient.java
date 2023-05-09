@@ -268,20 +268,24 @@ public class LevelDBNormalClient implements Watcher {
                     Kvservice.GetResponse res = null;
                     //client.put(finalI, finalI *2);
                     client.put(finalI, finalI * 3);
-                    int val = client.get(finalI);
+                    for(int k =0; k< 10; k++) {
+                        int val = client.get(finalI);
+                    }
+                    //int val = client.get(finalI);
                     //System.out.println("put request completed for i = " + finalI);
                     return res;
                 });
-
-//                completionService.submit(() -> {
-//                    Kvservice.GetResponse res = null;
-//                    //client.put(finalI, finalI *2);
-//                    int val = client.get(finalI);
+//                for(int k =0; k< 10; k++) {
+//                    completionService.submit(() -> {
+//                        Kvservice.GetResponse res = null;
+//                        //client.put(finalI, finalI *2);
+//                        int val = client.get(finalI);
 //
-//                    //System.out.println("Value of " + finalI + " == " + val);
-//                    //System.out.println("put request completed for i = " + finalI);
-//                    return res;
-//                });
+//                        //System.out.println("Value of " + finalI + " == " + val);
+//                        //System.out.println("put request completed for i = " + finalI);
+//                        return res;
+//                    });
+//                }
 
             }
         }

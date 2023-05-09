@@ -1,0 +1,8 @@
+"consistency_type","request_type","num_requests","avg_read_latency","avg_write_latency","total_time","throughput","monotonic_retry_count"
+"STRONG","get","5000","154","0","96723","51.69401279943757","0"
+"EVENTUAL","get","5000","152","0","95235","52.50170630545493","0"
+"STRONG","put","10000","0","137","172258","58.0524561994218","0"
+"STRONG","get_put","10000","151","34","116231","86.03556710344057","0"
+"EVENTUAL","get_put","10000","151","35","116734","85.66484486096596","0"
+"MONOTONIC_READS","get_put","10000","151","40","120419","83.04337355400726","7"
+"READ_MY_WRITES","get_put","10000","151","45","123098","81.23608831987522","0"
