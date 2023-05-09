@@ -174,12 +174,12 @@ public class KVSServer implements Watcher {
 
             try {
                 Kvservice.GetResponse response = KVServiceFactory.getInstance().get(req.getKey());
-//                Future<Integer> future = scheduler.schedule(() -> 1, 150, TimeUnit.MILLISECONDS);
-//                try {
-//                    future.get();
-//                } catch (Exception ex) {
-//
-//                }
+                Future<Integer> future = scheduler.schedule(() -> 1, 150, TimeUnit.MILLISECONDS);
+                try {
+                    future.get();
+                } catch (Exception ex) {
+
+                }
                 responseObserver.onNext(response);
                 responseObserver.onCompleted();
             }
@@ -194,12 +194,12 @@ public class KVSServer implements Watcher {
         public void appendEntriesRPC(Kvservice.APERequest req, StreamObserver<Kvservice.APEResponse> responseObserver) {
             System.out.println("Got request from client: index:" + req.getIndex() + ", nEntries: " + req.getEntryList().size());
             try {
-//                Future<Integer> future = scheduler.schedule(() -> 1, delay, TimeUnit.MILLISECONDS);
-//                try {
-//                    future.get();
-//                } catch (Exception ex) {
-//
-//                }
+                Future<Integer> future = scheduler.schedule(() -> 1, delay, TimeUnit.MILLISECONDS);
+                try {
+                    future.get();
+                } catch (Exception ex) {
+
+                }
 
                 Kvservice.APEResponse reply = KVServiceFactory.getInstance().appendEntries(req);
                 responseObserver.onNext(reply);
