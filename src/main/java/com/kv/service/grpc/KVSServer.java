@@ -33,6 +33,7 @@ public class KVSServer implements Watcher {
     private final String LEADER_PATH = "/leader-data";
     private final int SESSION_TIMEOUT = 3000;
     private String IpPort = "";
+    private long delay = 0;
 
     public KVSServer(String zkHostPort) throws IOException, InterruptedException, KeeperException {
         this.zk = new ZooKeeper(zkHostPort, SESSION_TIMEOUT, this);
@@ -149,6 +150,7 @@ public class KVSServer implements Watcher {
 
     static class KVSImpl extends KVServiceGrpc.KVServiceImplBase {
 
+        public static long delay = 0;
 
         public void put(Kvservice.PutRequest req, StreamObserver<Kvservice.PutResponse> responseObserver) {
             System.out.println("Got request from client: " + req);
@@ -182,6 +184,7 @@ public class KVSServer implements Watcher {
         public void appendEntriesRPC(Kvservice.APERequest req, StreamObserver<Kvservice.APEResponse> responseObserver) {
             System.out.println("Got request from client: index:" + req.getIndex() + ", nEntries: " + req.getEntryList().size());
             try {
+                Thread.sleep(delay);
                 Kvservice.APEResponse reply = KVServiceFactory.getInstance().appendEntries(req);
                 responseObserver.onNext(reply);
                 responseObserver.onCompleted();
@@ -232,6 +235,9 @@ public class KVSServer implements Watcher {
     public static void main(String[] args) throws IOException, InterruptedException, KeeperException {
         final KVSServer kvs = new KVSServer("10.10.1.2:2181");
         kvs.start(ServiceType.FOLLOWER, args[0]);
+        if (args.length >= 2) {
+            KVSImpl.delay = Long.parseLong(args[1]);
+        }
         kvs.server.awaitTermination();
     }
 
