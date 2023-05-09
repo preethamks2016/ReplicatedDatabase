@@ -166,13 +166,6 @@ public class KVSServer implements Watcher {
 
         public void get(Kvservice.GetRequest req, StreamObserver<Kvservice.GetResponse> responseObserver)  {
             System.out.println("Got request from client: " + req);
-            try {
-                Thread.sleep(150);;
-            }
-            catch (Exception ex)
-            {
-
-            }
 
             try {
                 Kvservice.GetResponse response = KVServiceFactory.getInstance().get(req.getKey());
@@ -184,6 +177,14 @@ public class KVSServer implements Watcher {
             } catch (IOException e) {
                 e.printStackTrace();
                 throw new RuntimeException(e);
+            }
+
+            try {
+                Thread.sleep(150);;
+            }
+            catch (Exception ex)
+            {
+
             }
         }
 
