@@ -174,12 +174,12 @@ public class KVSServer implements Watcher {
 
             try {
                 Kvservice.GetResponse response = KVServiceFactory.getInstance().get(req.getKey());
-                Future<Integer> future = scheduler.schedule(() -> 1, 150, TimeUnit.MILLISECONDS);
-                try {
-                    future.get();
-                } catch (Exception ex) {
-
-                }
+//                Future<Integer> future = scheduler.schedule(() -> 1, 150, TimeUnit.MILLISECONDS);
+//                try {
+//                    future.get();
+//                } catch (Exception ex) {
+//
+//                }
                 responseObserver.onNext(response);
                 responseObserver.onCompleted();
             }
