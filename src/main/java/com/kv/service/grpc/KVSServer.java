@@ -164,8 +164,15 @@ public class KVSServer implements Watcher {
             }
         }
 
-        public void get(Kvservice.GetRequest req, StreamObserver<Kvservice.GetResponse> responseObserver) {
+        public void get(Kvservice.GetRequest req, StreamObserver<Kvservice.GetResponse> responseObserver)  {
             System.out.println("Got request from client: " + req);
+            try {
+                Thread.sleep(150);;
+            }
+            catch (Exception ex)
+            {
+
+            }
 
             try {
                 Kvservice.GetResponse response = KVServiceFactory.getInstance().get(req.getKey());
@@ -235,6 +242,7 @@ public class KVSServer implements Watcher {
         final KVSServer kvs = new KVSServer("10.10.1.2:2181");
         kvs.start(ServiceType.FOLLOWER, args[0]);
         if (args.length >= 2) {
+            System.out.println("Putting delay of " + args[1]);
             KVSImpl.delay = Long.parseLong(args[1]);
         }
         kvs.server.awaitTermination();
