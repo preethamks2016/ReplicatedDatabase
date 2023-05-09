@@ -10,6 +10,8 @@ import io.grpc.stub.StreamObserver;
 import java.io.IOException;
 import java.io.File;
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
@@ -151,6 +153,9 @@ public class KVSServer implements Watcher {
 
         public static long delay = 0;
 
+        private static ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+
+
         public void put(Kvservice.PutRequest req, StreamObserver<Kvservice.PutResponse> responseObserver) {
             System.out.println("Got request from client: " + req);
 
@@ -169,11 +174,11 @@ public class KVSServer implements Watcher {
 
             try {
                 Kvservice.GetResponse response = KVServiceFactory.getInstance().get(req.getKey());
+                Future<Integer> future = scheduler.schedule(() -> 1, 150, TimeUnit.MILLISECONDS);
                 try {
-                    Thread.sleep(150);;
-                }
-                catch (Exception ex)
-                {
+                    future.get();
+                } catch (Exception ex) {
+
                 }
                 responseObserver.onNext(response);
                 responseObserver.onCompleted();
@@ -189,7 +194,13 @@ public class KVSServer implements Watcher {
         public void appendEntriesRPC(Kvservice.APERequest req, StreamObserver<Kvservice.APEResponse> responseObserver) {
             System.out.println("Got request from client: index:" + req.getIndex() + ", nEntries: " + req.getEntryList().size());
             try {
-                Thread.sleep(delay);
+                Future<Integer> future = scheduler.schedule(() -> 1, delay, TimeUnit.MILLISECONDS);
+                try {
+                    future.get();
+                } catch (Exception ex) {
+
+                }
+                
                 Kvservice.APEResponse reply = KVServiceFactory.getInstance().appendEntries(req);
                 responseObserver.onNext(reply);
                 responseObserver.onCompleted();
