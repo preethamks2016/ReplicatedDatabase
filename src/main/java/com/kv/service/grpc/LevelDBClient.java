@@ -1,8 +1,11 @@
 package com.kv.service.grpc;
 
-import com.google.gson.stream.JsonReader;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.kv.service.grpc.exception.NoLongerLeaderException;
+import com.kvs.KVServiceGrpc;
+import com.kvs.Kvservice;
 import io.grpc.*;
+import io.grpc.stub.StreamObserver;
 import lombok.SneakyThrows;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -10,19 +13,14 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import com.google.gson.Gson;
 
-import static io.netty.util.CharsetUtil.UTF_8;
 import static java.lang.Thread.sleep;
 
 public class LevelDBClient implements Watcher {
@@ -32,16 +30,16 @@ public class LevelDBClient implements Watcher {
 
     private String servicePath;
 
-    boolean blockWrites = true;
-
     private int latestIndex = -1;
 
     AddressNameResolverFactory nameResolverFactory;
 
+    String filePath = "readMetrics.txt";
 
-    private com.kvs.KVServiceGrpc.KVServiceBlockingStub writeStub;
 
-    private com.kvs.KVServiceGrpc.KVServiceBlockingStub readStub;
+    private KVServiceGrpc.KVServiceStub  writeStub;
+
+    private KVServiceGrpc.KVServiceStub readStub;
 
     private ConsistencyType consistencyType;
 
@@ -49,17 +47,32 @@ public class LevelDBClient implements Watcher {
 
     private Object indexObject;
 
+    BufferedWriter writer;
 
-    public LevelDBClient(String zooKeeperAddress, String leaderPath, String servicePath,  ConsistencyType consistencyType) throws Exception {
+    List<Long> readLatencies = new CopyOnWriteArrayList<>();
+
+    List<Long> writeLatencies = new CopyOnWriteArrayList<>();
+
+    private Object countObj;
+
+    int count = 0;
+
+
+
+
+    public LevelDBClient(String zooKeeperAddress, String leaderPath, String servicePath, ConsistencyType consistencyType) throws Exception {
         System.out.println("Initializing client");
         this.zooKeeper = new ZooKeeper(zooKeeperAddress, 2000, this);
         this.leaderPath = leaderPath;
         this.servicePath = servicePath;
         this.consistencyType = consistencyType;
         indexObject = new Object();
+        countObj = new Object();
         populateWriteServers();
         populateReadServers();
 
+        writer = new BufferedWriter(new FileWriter(filePath));
+        writer.write("Hello!");
     }
 
     public LevelDBClient() {
@@ -74,7 +87,7 @@ public class LevelDBClient implements Watcher {
         }
         List<SocketAddress> serverAddresses = getServerAddresses();
 
-        if(nameResolverFactory == null) {
+        if (nameResolverFactory == null) {
             nameResolverFactory = new AddressNameResolverFactory(
                     serverAddresses
             );
@@ -83,7 +96,8 @@ public class LevelDBClient implements Watcher {
                     .defaultLoadBalancingPolicy("round_robin")
                     .usePlaintext().build();
 
-            readStub = com.kvs.KVServiceGrpc.newBlockingStub(readChannel);
+            readStub = com.kvs.KVServiceGrpc.newStub(readChannel);
+            //newBlockingStub(readChannel);
         } else {
             nameResolverFactory.refresh(serverAddresses);
         }
@@ -100,7 +114,7 @@ public class LevelDBClient implements Watcher {
         List<SocketAddress> serverDetails = new ArrayList<>();
         // Notify the listener with the updated server list
 
-        for(String server : serverAddresses) {
+        for (String server : serverAddresses) {
             System.out.println("Server address - " + server);
             SocketAddress address1 = new InetSocketAddress(server.split(":")[0], Integer.valueOf(server.split(":")[1]));
             serverDetails.add(address1);
@@ -112,13 +126,12 @@ public class LevelDBClient implements Watcher {
     @SneakyThrows
     @Override
     public void process(WatchedEvent event) {
-        System.out.println("Even for path - " + event.getPath());
-        if(event.getPath().equals(leaderPath)) {
-            if(event.getType() == Event.EventType.NodeDataChanged) {
+        if (event.getPath().equals(leaderPath)) {
+            if (event.getType() == Event.EventType.NodeDataChanged) {
                 System.out.println("Leader changed. Updating the leader config");
                 populateWriteServers();
             }
-        } else if(event.getPath().equals(servicePath)) {
+        } else if (event.getPath().equals(servicePath)) {
             System.out.println("Received watch for change in the server list");
             //update the list of servers
             populateReadServers();
@@ -127,13 +140,13 @@ public class LevelDBClient implements Watcher {
 
     private void populateWriteServers() throws Exception {
         String leader = getLeader();
-        System.out.println("Leader details - " + leader);
+        //System.out.println("Leader details - " + leader);
         ManagedChannel writeChannel = ManagedChannelBuilder.forTarget(leader)
                 .usePlaintext()
                 .build();
         //TODO :: synchronization necessary?
         synchronized (this) {
-            writeStub = com.kvs.KVServiceGrpc.newBlockingStub(writeChannel);
+            writeStub = com.kvs.KVServiceGrpc.newStub(writeChannel);
         }
     }
 
@@ -144,77 +157,176 @@ public class LevelDBClient implements Watcher {
             throw new RuntimeException("Leader node does not exist!");
         }
         byte[] data = zooKeeper.getData(leaderPath, false, null);
-        return  new String(data);
+        return new String(data);
 
     }
 
     public void put(int key, int value) throws NoLongerLeaderException {
+        Long starttime = System.currentTimeMillis();
         com.kvs.Kvservice.PutRequest request = com.kvs.Kvservice.PutRequest.newBuilder().setKey(key).setValue(value).build();
         //System.out.println("Sending to server: " + request);
-        com.kvs.Kvservice.PutResponse response;
-        try {
-            response = writeStub.put(request);
-            synchronized (indexObject) {
-                if(response.getIndex() > latestIndex) {
-                    latestIndex = response.getIndex();
-                }
+        CompletableFuture<Kvservice.PutResponse> asyncResponse = triggerAsyncWriteRequest(request);
+        //System.out.println("completed put request");
+        asyncResponse.thenAccept(response -> {
+            //System.out.println("completed put request");
+            Long timeTaken  = System.currentTimeMillis() - starttime;
+            //System.out.println("Time taken - " + (timeTaken));
+            writeLatencies.add(timeTaken);
+            updateIndex(response.getIndex());
+            synchronized (countObj) {
+                count++;
             }
-        } catch (StatusRuntimeException e) {
-            logger.log(Level.WARNING, "RPC failed: {0}", e.getStatus());
-            Metadata metadata = e.getTrailers();
-            String metadataValue = metadata.get(Metadata.Key.of("leaderPort", Metadata.ASCII_STRING_MARSHALLER));
-            logger.log(Level.INFO, "New Leader port : " + metadataValue);
-            if (metadataValue != null && metadataValue.length() > 0) throw new NoLongerLeaderException(Integer.parseInt(metadataValue));
-            throw e;
+        });
+    }
+
+    private void updateIndex(int index) {
+        synchronized (indexObject) {
+            if(index > latestIndex) {
+                latestIndex = index;
+            }
         }
     }
 
-    public int get(int key) throws Exception {
+    public void get(int key) throws Exception {
+        Long startTime = System.currentTimeMillis();
         com.kvs.Kvservice.GetRequest request = com.kvs.Kvservice.GetRequest.newBuilder().setKey(key).build();
-        //System.out.println("Sending to server: " + request);
-        com.kvs.Kvservice.GetResponse response = null;
-        try {
-            if(consistencyType.equals(ConsistencyType.STRONG)){
-                //TODO :: get leader config and read
-            } else {
-                response = readStub.get(request);
-            }
-            if(consistencyType.equals(ConsistencyType.MONOTONIC_READS) && response.getIndex() < latestIndex) {
-                response = writeStub.get(request);
-            }
-            synchronized (indexObject) {
-                if(response.getIndex() > latestIndex) {
-                    latestIndex = response.getIndex();
-                }
-            }
-            return response.getValue();
-        } catch (StatusRuntimeException e) {
-            logger.log(Level.WARNING, "RPC failed: {0}", e.getStatus());
-            Metadata metadata = e.getTrailers();
-            String metadataValue = metadata.get(Metadata.Key.of("leaderPort", Metadata.ASCII_STRING_MARSHALLER));
-            if (metadataValue != null && metadataValue.length() > 0) throw new NoLongerLeaderException(Integer.parseInt(metadataValue));
-            throw e;
+        CompletableFuture<Kvservice.GetResponse> responseFuture;
+        int index = latestIndex;
+        if(consistencyType.equals(ConsistencyType.STRONG)) {
+            responseFuture = triggerAsyncGetRequest(request, writeStub);
+        } else {
+            responseFuture = triggerAsyncGetRequest(request, readStub);
         }
+
+        responseFuture.thenAccept(response -> {
+            if(index > response.getIndex()) {
+                CompletableFuture<Kvservice.GetResponse> leaderRead = triggerAsyncGetRequest(request, writeStub);
+                leaderRead.thenAccept(leaderReadResponse -> {
+                    System.out.println("Got the right response");
+                });
+            }
+            Long timetaken = System.currentTimeMillis() - startTime;
+            //System.out.println("Time taken = " + timetaken);
+            readLatencies.add(timetaken);
+            updateIndex(response.getIndex());
+            synchronized (countObj) {
+                count++;
+            }
+            // Handle the response
+        }).exceptionally(ex -> {
+            // Handle exceptions
+            return null;
+        });
+    }
+
+    private CompletableFuture<Kvservice.PutResponse> triggerAsyncWriteRequest(Kvservice.PutRequest request) {
+
+        CompletableFuture<Kvservice.PutResponse> future = new CompletableFuture<>();
+
+        writeStub.put(request, new StreamObserver<Kvservice.PutResponse>() {
+            @Override
+            public void onNext(Kvservice.PutResponse response) {
+                future.complete(response);  // Set the response on the CompletableFuture
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                future.completeExceptionally(t);  // Set the exception on the CompletableFuture
+            }
+
+            @Override
+            public void onCompleted() {
+                // Handle completion
+            }
+        });
+
+        return future;
+    }
+
+    private CompletableFuture<Kvservice.GetResponse> triggerAsyncGetRequest(Kvservice.GetRequest request, KVServiceGrpc.KVServiceStub stub) {
+
+        CompletableFuture<Kvservice.GetResponse> future = new CompletableFuture<>();
+
+        stub.get(request, new StreamObserver<Kvservice.GetResponse>() {
+            @Override
+            public void onNext(Kvservice.GetResponse response) {
+                future.complete(response);  // Set the response on the CompletableFuture
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                future.completeExceptionally(t);  // Set the exception on the CompletableFuture
+            }
+
+            @Override
+            public void onCompleted() {
+                // Handle completion
+            }
+        });
+
+        return future;
     }
 
     public static void main(String[] args) throws Exception {
         LevelDBClient client = new LevelDBClient("10.10.1.2:2181", "/leader-data", "/election", ConsistencyType.EVENTUAL);
-//        for (int i = 0; i < 5000; i++) {
-//            System.out.println(i);
-//            client.put(i, 2*i);
-//        }
+//        client.put(1, 2);
+//        client.put(2, 2);
+//        sleep(5000);
+//
+//        client.get(1);
+//        client.get(2);
+//        sleep(5000);
 
-        for (int i = 0; i < 5; i++) {
-            System.out.println(client.get(2342));
+        //System.out.println(client.get(1));
+        Long startTime = System.currentTimeMillis();
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        CompletionService<?> completionService = new ExecutorCompletionService<>(executor);
+        int numRequests = Integer.valueOf(args[0]);
+        for (int i = 0 ; i<numRequests; i++) {
+            int finalI = i;
+            int finalI1 = i;
+            int finalI2 = i;
+            completionService.submit(() -> {
+                Kvservice.GetResponse res =  null;
+                int x = finalI1;
+                //client.put(x, x * 2);
+                client.put(x, x*2);
+
+                return null;
+            });
         }
 
-//        System.out.println(client.get(1));
-//
+//        int count = 0;
+//        while (count < numRequests) {
+//            completionService.take().get();
+//            count++;
+//        }
+        while(client.count < numRequests) {
+            Thread.sleep(1000);
+        }
+        Long timeMillis = System.currentTimeMillis() - startTime;
+
+        System.out.println("Time taken - " +  timeMillis);
+
+        FileWriter readwriter = new FileWriter("readLatencies.txt");
+        FileWriter writewriter = new FileWriter("writeLatencies.txt");
+
+        for (Long latency : client.readLatencies) {
+            readwriter.write(String.valueOf(latency) +  System.lineSeparator());
+        }
+        for (Long latency : client.writeLatencies) {
+            //System.out.println("writing");
+            writewriter.write(String.valueOf(latency) + System.lineSeparator());
+        }
+
+        readwriter.close();
+        writewriter.close();
+
+        System.out.println("Done writing");
 //        while (true){
 //
 //            sleep(3000);
 //        }
 
     }
-
 }
