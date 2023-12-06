@@ -1,6 +1,5 @@
 package com.kv.service.grpc;
 
-import com.google.gson.stream.JsonReader;
 import com.kv.service.grpc.exception.NoLongerLeaderException;
 import io.grpc.*;
 import lombok.SneakyThrows;
@@ -10,20 +9,12 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import com.google.gson.Gson;
-
-import static io.netty.util.CharsetUtil.UTF_8;
-import static java.lang.Thread.sleep;
 
 public class LevelDBClient implements Watcher {
 
@@ -47,16 +38,12 @@ public class LevelDBClient implements Watcher {
 
     private static final Logger logger = Logger.getLogger(LevelDBClient.class.getName());
 
-    private Object indexObject;
-
 
     public LevelDBClient(String zooKeeperAddress, String leaderPath, String servicePath,  ConsistencyType consistencyType) throws Exception {
-        System.out.println("Initializing client");
-        this.zooKeeper = new ZooKeeper(zooKeeperAddress, 2000, this);
+        this.zooKeeper = new ZooKeeper(zooKeeperAddress, 5000, this);
         this.leaderPath = leaderPath;
         this.servicePath = servicePath;
         this.consistencyType = consistencyType;
-        indexObject = new Object();
         populateWriteServers();
         populateReadServers();
 
@@ -67,7 +54,7 @@ public class LevelDBClient implements Watcher {
     }
 
 
-    private void populateReadServers() throws InterruptedException, KeeperException, FileNotFoundException {
+    private void populateReadServers() throws InterruptedException, KeeperException {
         Stat stat = zooKeeper.exists(servicePath, this);
         if (stat == null) {
             throw new RuntimeException("Servers data does not exist");
@@ -81,8 +68,8 @@ public class LevelDBClient implements Watcher {
             ManagedChannel readChannel = ManagedChannelBuilder.forTarget("levelDb")
                     .nameResolverFactory(nameResolverFactory)
                     .defaultLoadBalancingPolicy("round_robin")
-                    .usePlaintext().build();
-
+                    .usePlaintext()
+                    .build();
             readStub = com.kvs.KVServiceGrpc.newBlockingStub(readChannel);
         } else {
             nameResolverFactory.refresh(serverAddresses);
@@ -90,10 +77,10 @@ public class LevelDBClient implements Watcher {
     }
 
     private List<SocketAddress> getServerAddresses() throws InterruptedException, KeeperException {
-        List<String> children = zooKeeper.getChildren(servicePath, true);
+        List<String> children = zooKeeper.getChildren(servicePath, false);
         List<String> serverAddresses = new ArrayList<>();
         for (String child : children) {
-            byte[] data = zooKeeper.getData(servicePath + "/" + child, false, null);
+            byte[] data = zooKeeper.getData(leaderPath + "/" + child, false, null);
             String nodeInfo = new String(data);
             serverAddresses.add(nodeInfo);
         }
@@ -101,7 +88,6 @@ public class LevelDBClient implements Watcher {
         // Notify the listener with the updated server list
 
         for(String server : serverAddresses) {
-            System.out.println("Server address - " + server);
             SocketAddress address1 = new InetSocketAddress(server.split(":")[0], Integer.valueOf(server.split(":")[1]));
             serverDetails.add(address1);
 
@@ -112,14 +98,13 @@ public class LevelDBClient implements Watcher {
     @SneakyThrows
     @Override
     public void process(WatchedEvent event) {
-        System.out.println("Even for path - " + event.getPath());
         if(event.getPath().equals(leaderPath)) {
-            if(event.getType() == Event.EventType.NodeDataChanged) {
-                System.out.println("Leader changed. Updating the leader config");
+            if(event.getType() == Event.EventType.NodeDeleted){
+                blockWrites = true;
+            } else {
                 populateWriteServers();
             }
         } else if(event.getPath().equals(servicePath)) {
-            System.out.println("Received watch for change in the server list");
             //update the list of servers
             populateReadServers();
         }
@@ -127,14 +112,11 @@ public class LevelDBClient implements Watcher {
 
     private void populateWriteServers() throws Exception {
         String leader = getLeader();
-        System.out.println("Leader details - " + leader);
         ManagedChannel writeChannel = ManagedChannelBuilder.forTarget(leader)
                 .usePlaintext()
                 .build();
-        //TODO :: synchronization necessary?
-        synchronized (this) {
-            writeStub = com.kvs.KVServiceGrpc.newBlockingStub(writeChannel);
-        }
+        writeStub = com.kvs.KVServiceGrpc.newBlockingStub(writeChannel);
+        blockWrites = false;
     }
 
 
@@ -144,7 +126,8 @@ public class LevelDBClient implements Watcher {
             throw new RuntimeException("Leader node does not exist!");
         }
         byte[] data = zooKeeper.getData(leaderPath, false, null);
-        return  new String(data);
+        String serverAddress = new String(data);
+        return serverAddress;
 
     }
 
@@ -175,13 +158,12 @@ public class LevelDBClient implements Watcher {
                 response = readStub.get(request);
             }
             if(consistencyType.equals(ConsistencyType.MONOTONIC_READS) && response.getIndex() < latestIndex) {
+                //TODO :: get leader config and talk to leader
                 response = writeStub.get(request);
             }
-            synchronized (indexObject) {
-                if(response.getIndex() > latestIndex) {
-                    latestIndex = response.getIndex();
-                }
-            }
+
+            latestIndex = response.getIndex();
+
             return response.getValue();
         } catch (StatusRuntimeException e) {
             logger.log(Level.WARNING, "RPC failed: {0}", e.getStatus());
@@ -193,15 +175,9 @@ public class LevelDBClient implements Watcher {
     }
 
     public static void main(String[] args) throws Exception {
-        LevelDBClient client = new LevelDBClient("127.0.0.1:2181", "/leader-data", "/election", ConsistencyType.EVENTUAL);
-        client.put(1, 2);
-
-        System.out.println(client.get(1));
-
-        while (true){
-
-            sleep(3000);
-        }
+        LevelDBClient client = new LevelDBClient();
+        ZooKeeper zk = new ZooKeeper("c220g1-031128.wisc.cloudlab.us:2181", 1000,client );
+        System.out.println("Ran");
 
     }
 
