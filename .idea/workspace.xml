@@ -5,15 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="98aafb11-af3f-4754-94a8-c59302269d80" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/kv/service/grpc/AddressNameResolverFactory.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/kv/service/grpc/ConsistencyType.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/kv/service/grpc/CustomNameResolver.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/kv/service/grpc/LevelDBClient.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/kv/service/grpc/LevelDBNormalClient.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dependency-reduced-pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/dependency-reduced-pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/kv/service/grpc/KVSServer.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/kv/service/grpc/KVSServer.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/kv/service/grpc/LeaderKVSService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/kv/service/grpc/LeaderKVSService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/kv/store/LogStore.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/kv/store/LogStore.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/kv/store/LogStoreImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/kv/store/LogStoreImpl.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -23,17 +19,12 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
-        <option value="Enum" />
         <option value="Class" />
       </list>
     </option>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
-  </component>
-  <component name="HighlightingSettingsPerFile">
-    <setting file="jar://$USER_HOME$/Library/Java/JavaVirtualMachines/azul-11.0.16.1/Contents/Home/lib/src.zip!/java.base/java/lang/Override.java" root0="SKIP_INSPECTION" />
-    <setting file="jar://$USER_HOME$/Library/Java/JavaVirtualMachines/azul-11.0.16.1/Contents/Home/lib/src.zip!/java.base/java/util/concurrent/ScheduledExecutorService.java" root0="SKIP_INSPECTION" />
   </component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
@@ -81,50 +72,15 @@
       <recent name="com.tp.grpc" />
     </key>
   </component>
-  <component name="RunManager" selected="Application.LevelDBClient">
-    <configuration name="LevelDBClient" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
-      <option name="MAIN_CLASS_NAME" value="com.kv.service.grpc.LevelDBClient" />
-      <module name="ReplicatedDatabase" />
-      <extension name="coverage">
-        <pattern>
-          <option name="PATTERN" value="com.kv.service.grpc.*" />
-          <option name="ENABLED" value="true" />
-        </pattern>
-      </extension>
-      <method v="2">
-        <option name="Make" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="LevelDBNormalClient" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
-      <option name="MAIN_CLASS_NAME" value="com.kv.service.grpc.LevelDBNormalClient" />
-      <module name="ReplicatedDatabase" />
-      <extension name="coverage">
-        <pattern>
-          <option name="PATTERN" value="com.kv.service.grpc.*" />
-          <option name="ENABLED" value="true" />
-        </pattern>
-      </extension>
-      <method v="2">
-        <option name="Make" enabled="true" />
-      </method>
-    </configuration>
-    <recent_temporary>
-      <list>
-        <item itemvalue="Application.LevelDBClient" />
-        <item itemvalue="Application.LevelDBNormalClient" />
-      </list>
-    </recent_temporary>
-  </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
-      <changelist id="98aafb11-af3f-4754-94a8-c59302269d80" name="Changes" comment="" />
+      <changelist id="6df9ea64-46a8-4afc-a0c9-b2514033bb9e" name="Changes" comment="" />
       <created>1679612538134</created>
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1679612538134</updated>
       <workItem from="1679612540083" duration="2949000" />
-      <workItem from="1683135885359" duration="9546000" />
     </task>
     <servers />
   </component>
@@ -141,30 +97,5 @@
         </entry>
       </map>
     </option>
-  </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" type="java-method">
-          <url>file://$PROJECT_DIR$/src/main/java/com/kv/service/grpc/LevelDBNormalClient.java</url>
-          <line>109</line>
-          <properties class="com.kv.service.grpc.LevelDBNormalClient" method="populateWriteServers">
-            <option name="EMULATED" value="true" />
-            <option name="WATCH_EXIT" value="false" />
-          </properties>
-          <option name="timeStamp" value="1" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="java-line">
-          <url>file://$PROJECT_DIR$/src/main/java/com/kv/service/grpc/LevelDBClient.java</url>
-          <line>179</line>
-          <option name="timeStamp" value="2" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
-  </component>
-  <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/ReplicatedDatabase$KVSServer.ic" NAME="KVSServer Coverage Results" MODIFIED="1680564587566" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="idea" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false">
-      <FILTER>com.kv.service.grpc.*</FILTER>
-    </SUITE>
   </component>
 </project>
